@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///Users/kartiksirohi/Documents/Code/Research/API%20Tester/frontend/app/main/page.tsx"],"sourcesContent":["export default function Main() {\n  return (\n    <div>\n      <h1>Welcome to the API Tester</h1>\n      <p>This is the main page of the API Tester.</p>\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;;0BACC,8OAAC;0BAAG;;;;;;0BACJ,8OAAC;0BAAE;;;;;;;;;;;;AAGT","debugId":null}}]
+}

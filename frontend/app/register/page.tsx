@@ -13,7 +13,9 @@ export default function Register() {
         <Link href="./login">
           Have an account? Login
         </Link>
+        <Link href="./main">
         <Button>Register</Button>
+        </Link>
       </form>
       </div>
     </div>
