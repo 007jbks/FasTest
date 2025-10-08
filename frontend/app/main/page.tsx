@@ -81,36 +81,6 @@ export default function APITestGenerator() {
               </a>
             ))}
           </nav>
-          {/*<nav className="space-y-4">
-            <a
-              href="#"
-              className="flex items-center gap-3 p-3 hover:bg-purple-800 rounded transition-colors"
-            >
-              <Home size={20} />
-              <span className="font-medium">Home</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 p-3 hover:bg-purple-800 rounded transition-colors"
-            >
-              <FolderGit2 size={20} />
-              <span className="font-medium">Repository</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 p-3 hover:bg-purple-800 rounded transition-colors"
-            >
-              <User size={20} />
-              <span className="font-medium">Account</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-3 p-3 hover:bg-purple-800 rounded transition-colors"
-            >
-              <Settings size={20} />
-              <span className="font-medium">Settings</span>
-            </a>
-          </nav>*/}
         </div>
 
         <div className="absolute bottom-0 left-0 p-6 space-y-2">
@@ -143,8 +113,8 @@ export default function APITestGenerator() {
         </div>
 
         {/* Form Container */}
-        <div className="flex items-center justify-center h-full px-8">
-          <div className="w-full max-w-2xl bg-gradient-to-br from-purple-900/40 to-purple-950/40 backdrop-blur-sm rounded-3xl p-12 shadow-2xl">
+        <div className="flex items-center justify-center h-full px-8 ">
+          <div className="w-full max-w-2xl  bg-gradient-to-br from-purple-900/40 to-purple-950/40 filter-blur-sm rounded-3xl p-12 shadow-2xl">
             <div className="space-y-6">
               {/* API URL Input */}
               <input

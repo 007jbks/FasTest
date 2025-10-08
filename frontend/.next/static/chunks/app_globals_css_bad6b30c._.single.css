@@ -2041,6 +2041,14 @@
     }
   }
 
+  .opacity-15 {
+    opacity: .15;
+  }
+
+  .opacity-55 {
+    opacity: .55;
+  }
+
   .shadow-2xl {
     --tw-shadow: 0 25px 50px -12px var(--tw-shadow-color, rgba(0, 0, 0, .25));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
