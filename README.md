@@ -1,5 +1,5 @@
 # FasTest
-AI API Tester written in FastAPI and nextjs
+AI API Tester written in FastAPI and next.js
 
 ## Stuff added till now:
 1. Landing page
