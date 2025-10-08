@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Home, FolderGit2, User, Settings } from "lucide-react";
+import {
+  Menu,
+  Home,
+  FolderGit2,
+  User,
+  Settings,
+  X,
+  Database,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function APITestGenerator() {
@@ -12,6 +20,17 @@ export default function APITestGenerator() {
     businessLogic: "",
     testCase: "",
   });
+  const navItems = [
+    { icon: Home, label: "Home", active: true, link: "./dashboard" },
+    {
+      icon: Database,
+      label: "Repository",
+      active: false,
+      link: "./repository",
+    },
+    { icon: User, label: "Account", active: false, link: "./dashboard" },
+    { icon: Settings, label: "Settings", active: false, link: "./dashboard" },
+  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,20 +46,42 @@ export default function APITestGenerator() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex h-screen bg-black text-white">
       {/* Sidebar */}
       <div
-        className={`${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 bg-gradient-to-b from-purple-900 to-purple-950 overflow-hidden`}
+        className={`${sidebarOpen ? "w-60" : "w-0"} bg-gradient-to-b from-gray-950 via-gray-950 to-black flex flex-col transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-800`}
       >
         <div className="p-6">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 p-2 hover:bg-purple-800 rounded transition-colors"
+            className="mb-8 text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
           >
-            <Menu size={24} />
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-
-          <nav className="space-y-4">
+          <nav className="space-y-2">
+            {navItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.link}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group ${
+                  item.active
+                    ? "bg-gradient-to-r from-purple-600/20 to-orange-600/20 text-white border border-purple-500/30"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                }`}
+              >
+                <item.icon
+                  size={20}
+                  className={`${
+                    item.active
+                      ? "text-purple-400"
+                      : "group-hover:text-purple-400 transition-colors"
+                  }`}
+                />
+                <span className="font-medium">{item.label}</span>
+              </a>
+            ))}
+          </nav>
+          {/*<nav className="space-y-4">
             <a
               href="#"
               className="flex items-center gap-3 p-3 hover:bg-purple-800 rounded transition-colors"
@@ -69,7 +110,7 @@ export default function APITestGenerator() {
               <Settings size={20} />
               <span className="font-medium">Settings</span>
             </a>
-          </nav>
+          </nav>*/}
         </div>
 
         <div className="absolute bottom-0 left-0 p-6 space-y-2">
@@ -99,11 +140,6 @@ export default function APITestGenerator() {
               <Menu size={24} />
             </button>
           )}
-        </div>
-
-        {/* Profile Avatar */}
-        <div className="absolute top-6 right-6">
-          <div className="w-12 h-12 bg-lime-400 rounded-full"></div>
         </div>
 
         {/* Form Container */}

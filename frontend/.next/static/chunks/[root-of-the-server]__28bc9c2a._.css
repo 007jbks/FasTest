@@ -1026,8 +1026,16 @@
     max-width: var(--container-7xl);
   }
 
+  .min-w-0 {
+    min-width: calc(var(--spacing) * 0);
+  }
+
   .flex-1 {
     flex: 1;
+  }
+
+  .flex-shrink-0 {
+    flex-shrink: 0;
   }
 
   .-translate-x-1\/2 {
@@ -1070,6 +1078,10 @@
 
   .flex-row {
     flex-direction: row;
+  }
+
+  .flex-nowrap {
+    flex-wrap: nowrap;
   }
 
   .items-center {

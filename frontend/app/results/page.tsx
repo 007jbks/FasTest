@@ -24,8 +24,6 @@ import {
 function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
   const navItems = [
     { icon: Home, label: "Generated Tests", page: "tests" },
-    { icon: Database, label: "Repository", page: "repository" },
-    { icon: Database, label: "Route Repository", page: "routes" },
     { icon: User, label: "Account", page: "account" },
     { icon: Settings, label: "Settings", page: "settings" },
   ];
@@ -106,228 +104,6 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
   );
 }
 
-// Repository Page Component
-function RepositoryPage({ sidebarOpen }) {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const repositories = [
-    { name: "/config/users", port: "8743", totalApis: 15, totalTests: 48 },
-    { name: "/users", port: "8743", totalApis: 12, totalTests: 36 },
-    { name: "/profiles", port: "8804", totalApis: 8, totalTests: 24 },
-    { name: "/webhooks", port: "7432", totalApis: 5, totalTests: 15 },
-    { name: "/something-new", port: "7743", totalApis: 3, totalTests: 12 },
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-purple-900/30 bg-black/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-white">Repository</h1>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Search and Filters */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-            <input
-              type="text"
-              placeholder="Search URLs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-purple-950/30 border border-purple-900/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-            />
-          </div>
-          <button className="px-6 py-4 bg-purple-950/30 border border-purple-900/50 rounded-xl text-white hover:bg-purple-900/40 transition-all flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
-          </button>
-        </div>
-
-        {/* Frame Section */}
-        <div className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              Frame
-              <span className="text-sm text-purple-400 font-normal">
-                Production Mode
-              </span>
-            </h2>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-purple-900/30">
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm w-8"></th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Name
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Port Num
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Total APIs
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Total Tests
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {repositories.map((repo, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-purple-900/10 hover:bg-purple-900/10 transition-colors group"
-                    >
-                      <td className="py-4 px-4">
-                        <Circle className="w-4 h-4 text-purple-500" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-white font-mono text-sm">
-                          {repo.name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 font-mono text-sm">
-                          {repo.port}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 text-sm">
-                          {repo.totalApis}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 text-sm">
-                          {repo.totalTests}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Route Repository Page Component
-function RouteRepositoryPage({ sidebarOpen }) {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const routes = [
-    { name: "UserSignal", port: "8743", totalTests: 24 },
-    { name: "LoginLogic", port: "8743", totalTests: 18 },
-    { name: "StoreStout", port: "8804", totalTests: 12 },
-    { name: "Home", port: "7432", totalTests: 8 },
-    { name: "Custom", port: "7743", totalTests: 6 },
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
-      <header className="border-b border-indigo-900/30 bg-black/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-white">Route Repository</h1>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
-            <input
-              type="text"
-              placeholder="Search Routes"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-indigo-950/30 border border-indigo-900/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-indigo-400/50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-          </div>
-          <button className="px-6 py-4 bg-indigo-950/30 border border-indigo-900/50 rounded-xl text-white hover:bg-indigo-900/40 transition-all flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
-          </button>
-        </div>
-
-        <div className="bg-gradient-to-br from-indigo-950/40 to-slate-950/40 border border-indigo-900/30 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-8 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-full"></div>
-              Frame
-              <span className="text-sm text-indigo-400 font-normal">
-                Production Mode
-              </span>
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-indigo-900/30">
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm w-8"></th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Route
-                    </th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Port Num
-                    </th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Total Tests
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {routes.map((route, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-indigo-900/10 hover:bg-indigo-900/10 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <Circle className="w-4 h-4 text-indigo-500" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-white font-mono text-sm">
-                          {route.name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-indigo-300 font-mono text-sm">
-                          {route.port}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-indigo-300 text-sm">
-                          {route.totalTests}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Generated Tests Page Component
 function GeneratedTestsPage({ sidebarOpen }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -342,7 +118,7 @@ function GeneratedTestsPage({ sidebarOpen }) {
       },
       expectedOutcome: {
         token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.",
         user: {
           id: 1,
           username: "existinguser",
@@ -451,10 +227,10 @@ function GeneratedTestsPage({ sidebarOpen }) {
           {tests.map((test) => (
             <div
               key={test.id}
-              className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden hover:border-purple-700/50 transition-all backdrop-blur-sm shadow-xl"
+              className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden hover:border-purple-700/50 transition-all backdrop-blur-sm shadow-xl flex-nowrap"
             >
-              <div className="p-8">
-                <div className="flex gap-8">
+              <div className="p-8 flex-nowrap">
+                <div className="flex-1 min-w-0 space-y-6 ">
                   {/* Left Side - Test Data */}
                   <div className="flex-1 space-y-6">
                     {/* Test Case */}
@@ -474,14 +250,14 @@ function GeneratedTestsPage({ sidebarOpen }) {
                         <div className="w-1 h-5 bg-green-500 rounded"></div>
                         Expected Outcome:
                       </h3>
-                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-x-auto font-mono max-h-48">
+                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-auto font-mono max-h-48">
                         {JSON.stringify(test.expectedOutcome, null, 2)}
                       </pre>
                     </div>
                   </div>
 
                   {/* Right Side - Metadata and Actions */}
-                  <div className="w-64 flex flex-col gap-4">
+                  <div className="w-64 flex-shrink-0 flex flex-col gap-4">
                     {/* Metadata Tags */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
