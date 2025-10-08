@@ -13,7 +13,7 @@ export default function Register() {
         <Link href="./login">
           Have an account? Login
         </Link>
-        <Link href="./main">
+        <Link href="./dashboard">
         <Button>Register</Button>
         </Link>
       </form>

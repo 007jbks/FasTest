@@ -9,7 +9,9 @@ import {
   X,
   Mail,
   FileText,
+  Plus,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,10 +34,15 @@ export default function Dashboard() {
   ];
 
   const navItems = [
-    { icon: Home, label: "Home", active: true },
-    { icon: Database, label: "Repository", active: false },
-    { icon: User, label: "Account", active: false },
-    { icon: Settings, label: "Settings", active: false },
+    { icon: Home, label: "Home", active: true, link: "./dashboard" },
+    {
+      icon: Database,
+      label: "Repository",
+      active: false,
+      link: "./repository",
+    },
+    { icon: User, label: "Account", active: false, link: "./dashboard" },
+    { icon: Settings, label: "Settings", active: false, link: "./dashboard" },
   ];
 
   return (
@@ -56,7 +63,7 @@ export default function Dashboard() {
             {navItems.map((item, index) => (
               <a
                 key={index}
-                href="#"
+                href={item.link}
                 className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group ${
                   item.active
                     ? "bg-gradient-to-r from-purple-600/20 to-orange-600/20 text-white border border-purple-500/30"
@@ -115,7 +122,14 @@ export default function Dashboard() {
       <div className="flex-1 bg-black overflow-auto">
         <div className="p-8">
           {/* Header Avatar */}
-          <div className="w-10 h-10 rounded-full bg-lime-400 fixed top-5 right-5 shadow-lg shadow-lime-400/50"></div>
+          {/*<div className="w-10 h-10 rounded-full bg-lime-400  shadow-lg shadow-lime-400/50">
+            <Plus className="w-6 h-6 mx-auto text-black" />
+          </div>*/}
+          <Link href="./main">
+            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full fixed top-5 right-5 hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
+              <Plus className="w-6 h-6 mx-auto text-black" />
+            </button>
+          </Link>
 
           {/* Profile Card */}
           <div className="rounded-xl p-8 mb-8">

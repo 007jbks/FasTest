@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, Home, FolderGit2, User, Settings } from "lucide-react";
+import Link from "next/link";
 
 export default function APITestGenerator() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -151,13 +152,15 @@ export default function APITestGenerator() {
 
               {/* Generate Button */}
               <div className="flex justify-end pt-6">
-                <button
-                  onClick={handleGenerateTests}
-                  className="px-8 py-3 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
-                >
-                  Generate Tests
-                  <span>→</span>
-                </button>
+                <Link href="./results">
+                  <button
+                    onClick={handleGenerateTests}
+                    className="px-8 py-3 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+                  >
+                    Generate Tests
+                    <span>→</span>
+                  </button>{" "}
+                </Link>
               </div>
             </div>
           </div>
