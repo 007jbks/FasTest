@@ -118,7 +118,7 @@ function GeneratedTestsPage({ sidebarOpen }) {
       },
       expectedOutcome: {
         token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_ad",
         user: {
           id: 1,
           username: "existinguser",
@@ -227,37 +227,37 @@ function GeneratedTestsPage({ sidebarOpen }) {
           {tests.map((test) => (
             <div
               key={test.id}
-              className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden hover:border-purple-700/50 transition-all backdrop-blur-sm shadow-xl flex-nowrap"
+              className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden hover:border-purple-700/50 transition-all backdrop-blur-sm shadow-xl"
             >
-              <div className="p-8 flex-nowrap">
-                <div className="flex-1 min-w-0 space-y-6 ">
+              <div className="p-8">
+                <div className="flex gap-8">
                   {/* Left Side - Test Data */}
-                  <div className="flex-1 space-y-6">
+                  <div className="flex-1 w-1/2 space-y-6">
                     {/* Test Case */}
                     <div>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2 overflow-x-auto">
                         <div className="w-1 h-5 bg-purple-500 rounded"></div>
                         Test Case:
                       </h3>
-                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-x-auto font-mono">
+                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-x-scroll overflow-y-scroll font-mono">
                         {JSON.stringify(test.testCase, null, 2)}
                       </pre>
                     </div>
 
                     {/* Expected Outcome */}
                     <div>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <div className="w-1 h-5 bg-green-500 rounded"></div>
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2 overflow-x-auto">
+                        <div className="w-1 h-5 bg-green-500 rounded "></div>
                         Expected Outcome:
                       </h3>
-                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-auto font-mono max-h-48">
+                      <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm overflow-x-auto font-mono max-h-48">
                         {JSON.stringify(test.expectedOutcome, null, 2)}
                       </pre>
                     </div>
                   </div>
 
                   {/* Right Side - Metadata and Actions */}
-                  <div className="w-64 flex-shrink-0 flex flex-col gap-4">
+                  <div className="w-1/3 flex flex-col gap-4 overflow-x-auto ">
                     {/* Metadata Tags */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
