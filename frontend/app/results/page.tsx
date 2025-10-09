@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 // Sidebar Component
+// Sidebar Component
 function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
   const navItems = [
     { icon: Home, label: "Generated Tests", page: "tests" },
@@ -32,12 +33,17 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
     <>
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full ${sidebarOpen ? "w-60" : "w-0"} bg-gradient-to-b from-gray-950 via-gray-950 to-black flex flex-col transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-800 z-40`}
+        className={`fixed top-0 left-0 h-full ${
+          sidebarOpen ? "w-60" : "w-0"
+        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40`}
       >
-        <div className="p-6">
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
+
+        <div className="p-6 relative">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 hover:border-white/20"
           >
             <X size={24} />
           </button>
@@ -47,18 +53,18 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
               <button
                 key={index}
                 onClick={() => setCurrentPage(item.page)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group ${
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group ${
                   currentPage === item.page
-                    ? "bg-gradient-to-r from-purple-600/20 to-orange-600/20 text-white border border-purple-500/30"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    ? "bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border border-purple-400/30 backdrop-blur-sm shadow-lg shadow-purple-500/20"
+                    : "text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm border border-transparent hover:border-white/20"
                 }`}
               >
                 <item.icon
                   size={20}
                   className={`${
                     currentPage === item.page
-                      ? "text-purple-400"
-                      : "group-hover:text-purple-400 transition-colors"
+                      ? "text-purple-300"
+                      : "group-hover:text-purple-300 transition-colors"
                   }`}
                 />
                 <span className="font-medium">{item.label}</span>
@@ -67,24 +73,24 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
           </nav>
         </div>
 
-        <div className="mt-auto p-6 space-y-3 text-sm border-t border-gray-800">
+        <div className="mt-auto p-6 space-y-3 text-sm border-t border-white/10 backdrop-blur-sm relative">
           <a
             href="#"
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
           >
             <Mail
               size={16}
-              className="group-hover:text-purple-400 transition-colors"
+              className="group-hover:text-purple-300 transition-colors"
             />
             <span>Contact Us</span>
           </a>
           <a
             href="#"
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
           >
             <FileText
               size={16}
-              className="group-hover:text-purple-400 transition-colors"
+              className="group-hover:text-purple-300 transition-colors"
             />
             <span>Policies</span>
           </a>
@@ -95,7 +101,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg bg-gray-950/90 backdrop-blur-sm"
+          className="fixed top-6 left-6 z-50 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-xl border border-white/20"
         >
           <Menu size={24} />
         </button>
@@ -144,7 +150,7 @@ function GeneratedTestsPage({ sidebarOpen }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900">
       {/* Header */}
       <header className="border-b border-purple-900/30 bg-black/20 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-6">
