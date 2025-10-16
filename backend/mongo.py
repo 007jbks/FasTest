@@ -7,9 +7,13 @@ logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
-mongo_srv = os.environ["mongo"]
+mongo_srv = os.environ.get("mongo")
+
+client: AsyncIOMotorClient = None
+db: AsyncIOMotorDatabase = None
 
 async def connect_to_mongo():
+    global client, db
     logging.info("inside the connection function")
     if not mongo_srv:
         logging.error("Error: 'mongo' environment variable not set.")
@@ -18,6 +22,7 @@ async def connect_to_mongo():
     logging.info("Connecting to MongoDB...")
     try:
         client = AsyncIOMotorClient(mongo_srv)
+        db = client.FasTest
         logging.info("Successfully connected to MongoDB!")
     except Exception as e:
         logging.error(f"Could not connect to MongoDB: {e}")
@@ -29,6 +34,4 @@ async def close_mongo_connection():
     logging.info("MongoDB connection closed.")
 
 def get_database() -> AsyncIOMotorDatabase:
-    if client.db is None:
-        raise Exception("Database not initialized. Call connect_to_mongo first.")
-    return client.db
+    return db
