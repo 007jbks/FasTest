@@ -1,24 +1,16 @@
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
 from routers import auth
-from mongo import connect_to_mongo, close_mongo_connection, get_database
+from db import get_db, engine, Base
+from sqlalchemy.orm import Session
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await connect_to_mongo()
-    yield
-    await close_mongo_connection()
+Base.metadata.drop_all(bind=engine)
 
-db = None
-app = FastAPI(lifespan=lifespan)
-try:
-    db = get_database()
-    print("DB connected")
-except Exception as e:
-    print(f"Error while connecting to db ,  {e}")
+Base.metadata.create_all(bind=engine)
+app = FastAPI()
 
 app.include_router(auth.router)
 
+
 @app.get("/")
-def hello():
-    return {"message": "hello world"}
+async def hello():
+    return {"message": "Hello world!"}

@@ -4,3 +4,5 @@ node_modules/
 .next/
 backend/env/
 backend/__pycache__
+__pycache__
+routers/__pycache__
