@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 import jwt
 from dotenv import load_dotenv
 import os
+import bcrypt
 
 load_dotenv()
 
@@ -32,7 +33,10 @@ def signup(user: Signup, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=400, detail="User with same email already exists"
         )
-    new_user = User(username=user.username, email=user.email, password=user.password)
+    hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
+    new_user = User(
+        username=user.username, email=user.email, password=hashed_pw.decode("utf-8")
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
