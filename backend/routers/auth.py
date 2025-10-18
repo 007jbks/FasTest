@@ -21,6 +21,11 @@ class Signup(BaseModel):
     password: str
 
 
+class Login(BaseModel):
+    email: str
+    password: str
+
+
 @router.get("/working")
 def test():
     return {"message": "working"}
@@ -42,4 +47,18 @@ def signup(user: Signup, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     token: str | None = jwt.encode({"id": new_user.id}, secret, algorithm="HS256")
+    return {"token": token}
+
+
+@router.post("/login")
+def login(user: Login, db: Session = Depends(get_db)):
+    check_user = db.query(User).filter(User.email == user.email).first()
+    if not check_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    result = bcrypt.checkpw(
+        user.password.encode("utf-8"), check_user.password.encode("utf-8")
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Incorrect Password")
+    token = jwt.encode({"id": check_user.id}, secret, algorithm="HS256")
     return {"token": token}
