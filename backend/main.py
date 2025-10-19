@@ -3,7 +3,7 @@ from routers import auth
 from db import get_db, engine, Base
 from sqlalchemy.orm import Session
 
-Base.metadata.drop_all(bind=engine)
+Base.metadata.drop_all(bind=engine)  # this is for testing i must remove this later
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
