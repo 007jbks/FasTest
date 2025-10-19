@@ -14,4 +14,4 @@ class Test(Base):
     __tablename__: str = "tests"
     id: Mapped[int] = mapped_column(primary_key=True)
     body: Mapped[str] = mapped_column()
-    result: Mapped[str] = mapped_column()
+    user_id: Mapped[int] = mapped_column()
