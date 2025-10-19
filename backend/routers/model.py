@@ -14,22 +14,36 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
+ref = """
+{
+    "test_name": "Successful Login with Valid Credentials",
+    "request_method": "POST",
+    "request_endpoint": "/login",
+    "request_headers": {
+      "Content-Type": "application/json"
+    },
+    "request_body": {
+      "email": "user@example.com",
+      "password": "SecurePassword123"
+    },
+    "expected_status_code": 200,
+    "expected_response_body": {
+      "message": "Login successful",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NSIsImlhdCI6MTY3ODkwMTIzNH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    }
+  }
+"""
+
+
 def api_tests(prompt: str | None) -> str | None:
     if not prompt:
         return None
     system = [
         (
             "system",
-            "You are now an api test case generator. You must generate api test cases along with expected outputs in json only respond in only json. The context of the api will be given by human.",
+            f"You are now an api test case generator. You must generate api test cases along with expected outputs in json only respond in only json. The context of the api will be given by human.Create tests like this {ref}",
         ),
         ("human", f"The context of the api is {prompt}"),
     ]
     response: str | None = llm.invoke(system).content
     return response[7:-3]
-
-
-print(
-    api_tests(
-        "The api is of authentication basic login route the url is 127.0.0.1 and the route is your basic /login route "
-    )
-)

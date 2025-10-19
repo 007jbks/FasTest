@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import auth
+from routers import auth, api_creation
 from db import get_db, engine, Base
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.include_router(auth.router)
+app.include_router(api_creation.router)
 
 
 @app.get("/")
