@@ -9,3 +9,10 @@ AI API Tester written in FastAPI and next.js
 5. Main Tool Page
 6. Generated Results Page
 7. Repository page with three tabs - url, routes and tests
+
+
+## Backend Features:
+1. Auth
+2. Create Test
+3. Save Tests,Routes and URLs
+4. Edit Tests
