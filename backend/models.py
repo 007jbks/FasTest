@@ -1,6 +1,7 @@
 from db import Base
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
+from datetime import datetime
 
 
 class User(Base):
@@ -18,6 +19,10 @@ class Test(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     route_id: Mapped[int] = mapped_column(ForeignKey("routes.route_id"))
     url_id: Mapped[int] = mapped_column(ForeignKey("url.url_id"))
+    created_at: Mapped[datetime] = mapped_column(default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        default=func.now(), onupdate=func.now()
+    )
 
 
 class Route(Base):
