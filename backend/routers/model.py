@@ -16,9 +16,10 @@ llm = ChatGoogleGenerativeAI(
 
 ref = """
 {
+    "base_url":"127.0.0.1",
+    "route" : "/login",
     "test_name": "Successful Login with Valid Credentials",
     "request_method": "POST",
-    "request_endpoint": "/login",
     "request_headers": {
       "Content-Type": "application/json"
     },
@@ -46,4 +47,7 @@ def api_tests(prompt: str | None) -> str | None:
         ("human", f"The context of the api is {prompt}"),
     ]
     response: str | None = llm.invoke(system).content
-    return response[7:-3]
+    print(response)
+    start = min(response.find("{"), response.find("["))
+    end = max(response.rfind("}"), response.rfind("]"))
+    return response[start : end + 1]
