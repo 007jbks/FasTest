@@ -47,7 +47,6 @@ def api_tests(prompt: str | None) -> str | None:
         ("human", f"The context of the api is {prompt}"),
     ]
     response: str | None = llm.invoke(system).content
-    print(response)
     start = min(response.find("{"), response.find("["))
     end = max(response.rfind("}"), response.rfind("]"))
     return response[start : end + 1]
