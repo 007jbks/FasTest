@@ -1,4 +1,3 @@
-from hashlib import algorithms_available
 from tomllib import load
 from .model import api_tests
 from fastapi import APIRouter, Depends, HTTPException, Header
