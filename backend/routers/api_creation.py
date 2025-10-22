@@ -10,22 +10,61 @@ import json
 import jwt
 import os
 from dotenv import load_dotenv
+from typing import List, Dict, Any
 
 load_dotenv()
 
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-@router.post("/create")
-def get_tests(prompt: str, token: str = Header(...), db: Session = Depends(get_db)):
-    user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])["id"]
+class GenerateTestsRequest(BaseModel):
+    prompt: str
+
+
+class SaveTestsRequest(BaseModel):
+    tests: List[Dict[str, Any]]
+
+
+@router.post("/generate-tests")
+def generate_tests_only(
+    request: GenerateTestsRequest,
+    token: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="No such user found")
-    tests = api_tests(prompt)
-    tests = json.loads(tests)
-    for test in tests:
-        url_name = test["base_url"]
+    tests_str = api_tests(request.prompt)
+    tests = json.loads(tests_str)
+    return tests
+
+
+@router.post("/save-tests")
+def save_tests(
+    request: SaveTestsRequest, token: str = Header(...), db: Session = Depends(get_db)
+):
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No such user found")
+
+    for test in request.tests:
+        url_name = test.get("base_url")
+        if not url_name:
+            raise HTTPException(status_code=400, detail="Test is missing base_url")
+
         url = db.query(Url).filter(Url.urlname == url_name).first()
         if not url:
             new_url = Url(urlname=url_name)
@@ -33,7 +72,11 @@ def get_tests(prompt: str, token: str = Header(...), db: Session = Depends(get_d
             db.commit()
             db.refresh(new_url)
             url = new_url
-        route_name = test["route"]
+
+        route_name = test.get("route")
+        if not route_name:
+            raise HTTPException(status_code=400, detail="Test is missing route")
+
         route = db.query(Route).filter(Route.routename == route_name).first()
         if not route:
             new_route = Route(routename=route_name)
@@ -41,6 +84,7 @@ def get_tests(prompt: str, token: str = Header(...), db: Session = Depends(get_d
             db.commit()
             db.refresh(new_route)
             route = new_route
+
         new_test = Test(
             body=json.dumps(test),
             user_id=user_id,
@@ -51,4 +95,4 @@ def get_tests(prompt: str, token: str = Header(...), db: Session = Depends(get_d
         db.commit()
         db.refresh(new_test)
 
-    return tests
+    return {"message": "Tests saved successfully"}
