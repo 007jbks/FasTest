@@ -6,7 +6,7 @@ load_dotenv()
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+    model="gemini-2.0-flash",
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -49,4 +49,5 @@ def api_tests(prompt: str | None) -> str | None:
     response: str | None = llm.invoke(system).content
     start = min(response.find("{"), response.find("["))
     end = max(response.rfind("}"), response.rfind("]"))
+    print(response)
     return response[start : end + 1]
