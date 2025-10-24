@@ -26,11 +26,6 @@ class Login(BaseModel):
     password: str
 
 
-@router.get("/working")
-def test():
-    return {"message": "working"}
-
-
 @router.post("/signup")
 def signup(user: Signup, db: Session = Depends(get_db)):
     prev = db.query(User).filter(User.email == user.email).first()

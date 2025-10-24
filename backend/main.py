@@ -10,21 +10,15 @@ from sqlalchemy.orm import Session
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)
 app.include_router(api_creation.router)
 app.include_router(history.router)
 app.include_router(dashboard.router)
-
-
-@app.get("/")
-async def hello():
-    return {"message": "Hello world!"}
