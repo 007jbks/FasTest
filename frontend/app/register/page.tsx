@@ -38,7 +38,12 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Reset error before new submission
+    setError(null);
+
+    if (!username || !email || !password) {
+      setError("All fields are required.");
+      return;
+    }
 
     try {
       const data = await register(username, email, password);
@@ -112,9 +117,9 @@ export default function Register() {
             Have an account? Login
           </Link>
 
-          <button type="submit" className="mt-2">
-            <Button>Register</Button>
-          </button>
+          <Button type="submit" className="mt-2">
+            Register
+          </Button>
         </form>
       </div>
     </div>

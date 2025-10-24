@@ -37,6 +37,11 @@ export default function Login() {
     e.preventDefault();
     setError(null);
 
+    if (!email || !password) {
+      setError("All fields are required.");
+      return;
+    }
+
     try {
       const data = await login(email, password);
       console.log("Login successful:", data);
@@ -102,9 +107,9 @@ export default function Login() {
             New user? Register
           </Link>
 
-          <button type="submit" className="mt-2">
-            <Button>Login</Button>
-          </button>
+          <Button type="submit" className="mt-2">
+            Login
+          </Button>
         </form>
       </div>
     </div>
