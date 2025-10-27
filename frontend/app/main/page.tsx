@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const base_url = "http://127.0.0.1:8000";
+
 export default function APITestGenerator() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [formData, setFormData] = useState({
@@ -44,7 +46,23 @@ export default function APITestGenerator() {
 
   const handleGenerateTests = () => {
     console.log("Generating tests with:", formData);
-    // Add your test generation logic here
+    const prompt = JSON.stringify(formData);
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+    const response = fetch(`${base_url}/api/generate-tests`, {
+      method: "POST",
+      body: JSON.stringify({
+        prompt: prompt,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        token: token,
+      },
+    });
+    console.log(response);
   };
 
   return (

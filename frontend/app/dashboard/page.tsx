@@ -187,7 +187,9 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between mb-12 relative">
               <div className="flex items-center gap-4">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 to-green-500 shadow-lg shadow-lime-400/30"></div>
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 to-green-500 shadow-lg shadow-lime-400/30">
+                  <img src={"https://avatar.iran.liara.run/public/boy"} />
+                </div>
                 <h2 className="text-4xl font-normal bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
                   Hannah Smith
                 </h2>
