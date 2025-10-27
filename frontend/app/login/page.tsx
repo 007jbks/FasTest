@@ -44,7 +44,6 @@ export default function Login() {
 
     try {
       const data = await login(email, password);
-      console.log("Login successful:", data);
       if (data.token) {
         localStorage.setItem("userToken", data.token);
         router.push("/dashboard");

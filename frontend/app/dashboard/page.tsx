@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Home,
   Database,
@@ -13,25 +13,60 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const base_url = "http://127.0.0.1:8000";
+
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [stats, setStats] = useState([
+    { value: "0", label: "Tests" },
+    { value: "0", label: "APIs" },
+    { value: "0", label: "Routes" },
+  ]);
+  const [chartData, setChartData] = useState([]);
 
-  const stats = [
-    { value: "85%", label: "Passed" },
-    { value: "1300", label: "Tests" },
-    { value: "45", label: "APIs" },
-    { value: "100", label: "Routes" },
-  ];
+  useEffect(() => {
+    const getdata = async () => {
+      const token = localStorage.getItem("userToken");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+      try {
+        const response = await fetch(`${base_url}/dashboard/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            token: token,
+          },
+        });
 
-  const chartData = [
-    { height: 50, color: "bg-green-400" },
-    { height: 75, color: "bg-green-300" },
-    { height: 70, color: "bg-green-300" },
-    { height: 35, color: "bg-red-500" },
-    { height: 60, color: "bg-green-400" },
-    { height: 45, color: "bg-red-500" },
-    { height: 73, color: "bg-green-300" },
-  ];
+        if (response.ok) {
+          const data = await response.json();
+
+          setStats([
+            { value: String(data.total_tests), label: "Tests" },
+            { value: String(data.total_urls), label: "APIs" },
+            { value: String(data.total_routes), label: "Routes" },
+          ]);
+
+          const weeklyCounts = Object.values(data.weekly_tests).slice(-7);
+          const maxCount = Math.max(...weeklyCounts);
+
+          const newChartData = weeklyCounts.map((count) => ({
+            height: maxCount > 0 ? (count / maxCount) * 100 : 0,
+            color: "bg-green-400",
+          }));
+          setChartData(newChartData);
+        } else {
+          console.error("Failed to fetch dashboard data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+
+    getdata();
+  }, []);
 
   const navItems = [
     { icon: Home, label: "Home", active: true, link: "./dashboard" },

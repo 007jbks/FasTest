@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -20,7 +20,8 @@ import {
   Circle,
 } from "lucide-react";
 
-// Sidebar Component
+const base_url = "http://127.0.0.1:8000";
+
 // Sidebar Component
 function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
   const navItems = [
@@ -114,40 +115,56 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
 function GeneratedTestsPage({ sidebarOpen }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [tests, setTests] = useState([]);
 
-  const tests = [
-    {
-      id: 1,
-      testCase: {
-        username: "existinguser",
-        password: "P@ssw0rd123",
-      },
-      expectedOutcome: {
-        token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_ad",
-        user: {
-          id: 1,
-          username: "existinguser",
-          email: "existinguser@example.com",
-        },
-      },
-      difficulty: "Medium",
-      type: "Positive",
-    },
-    {
-      id: 2,
-      testCase: {
-        username: "invaliduser",
-        password: "wrongpassword",
-      },
-      expectedOutcome: {
-        error: "Invalid credentials",
-        statusCode: 401,
-      },
-      difficulty: "Hard",
-      type: "Negative",
-    },
-  ];
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        console.log("Attempting to fetch tests...");
+        const token = localStorage.getItem("userToken");
+        if (!token) {
+          console.error("Authentication token not found. Please log in.");
+          return;
+        }
+
+        const response = await fetch(`${base_url}/history/`, {
+          headers: {
+            token: token,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `API request failed with status ${response.status}: ${errorText}`,
+          );
+          throw new Error(`API request failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Successfully fetched tests:", data);
+
+        const formattedTests = data.map((item) => {
+          const body = JSON.parse(item.body);
+          return {
+            id: item.id,
+            testCase: body.test_case,
+            expectedOutcome: body.expected_response,
+            difficulty: "Medium", // Placeholder
+            type:
+              body.expected_response.status_code === 200
+                ? "Positive"
+                : "Negative",
+          };
+        });
+        setTests(formattedTests);
+      } catch (error) {
+        console.error("An error occurred while fetching tests:", error);
+      }
+    };
+
+    fetchTests();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900">
