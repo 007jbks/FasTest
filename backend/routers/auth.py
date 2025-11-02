@@ -1,5 +1,5 @@
 from db import get_db
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from models import User
 from sqlalchemy.orm import Session
@@ -57,3 +57,18 @@ def login(user: Login, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Incorrect Password")
     token = jwt.encode({"id": check_user.id}, secret, algorithm="HS256")
     return {"token": token}
+
+
+@router.get("/me")
+def get_user(token: str = Header(...), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        user_id = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"username": user.username}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

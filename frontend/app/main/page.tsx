@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Menu,
   Home,
@@ -26,6 +26,17 @@ export default function APITestGenerator() {
     businessLogic: "",
     testCase: "",
   });
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  useEffect(() => {
+    const { apiUrl, requestFormat, businessLogic } = formData;
+    setIsFormValid(
+      apiUrl.trim() !== "" &&
+        requestFormat.trim() !== "" &&
+        businessLogic.trim() !== "",
+    );
+  }, [formData]);
+
   const navItems = [
     { icon: Home, label: "Home", active: true, link: "./dashboard" },
     {
@@ -47,6 +58,7 @@ export default function APITestGenerator() {
   };
 
   const handleGenerateTests = async () => {
+    if (!isFormValid) return;
     setIsLoading(true);
     console.log("Generating tests with:", formData);
     const prompt = JSON.stringify(formData);
@@ -241,7 +253,7 @@ export default function APITestGenerator() {
               <div className="flex justify-end pt-6">
                 <button
                   onClick={handleGenerateTests}
-                  disabled={isLoading}
+                  disabled={!isFormValid || isLoading}
                   className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Generating..." : "Generate Tests"}

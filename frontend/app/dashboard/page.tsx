@@ -17,6 +17,7 @@ const base_url = "http://127.0.0.1:8000";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [username, setUsername] = useState("User");
   const [stats, setStats] = useState([
     { value: "0", label: "Tests" },
     { value: "0", label: "APIs" },
@@ -26,12 +27,35 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getdata = async () => {
+      // Check for cached data first
+      const cachedData = sessionStorage.getItem("dashboardData");
+      if (cachedData) {
+        const { stats, chartData, username } = JSON.parse(cachedData);
+        setStats(stats);
+        setChartData(chartData);
+        setUsername(username);
+        return; // Exit if we have cached data
+      }
+
       const token = localStorage.getItem("userToken");
       if (!token) {
         console.error("No token found");
         return;
       }
       try {
+        // Fetch username
+        const userResponse = await fetch(`${base_url}/auth/me`, {
+          headers: { token },
+        });
+        let username = "User";
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          username = userData.username;
+          setUsername(username);
+        } else {
+          console.error("Failed to fetch username");
+        }
+
         const response = await fetch(`${base_url}/dashboard/`, {
           method: "GET",
           headers: {
@@ -43,20 +67,56 @@ export default function Dashboard() {
         if (response.ok) {
           const data = await response.json();
 
-          setStats([
+          const stats = [
             { value: String(data.total_tests), label: "Tests" },
             { value: String(data.total_urls), label: "APIs" },
             { value: String(data.total_routes), label: "Routes" },
-          ]);
+          ];
+          setStats(stats);
 
-          const weeklyCounts = Object.values(data.weekly_tests).slice(-7);
-          const maxCount = Math.max(...weeklyCounts);
+          const weeklyData = data.weekly_tests;
+          const today = new Date();
+          const days = [];
+          const dayLabels = [];
+          const dayShortNames = [
+            "Sun",
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+          ];
 
-          const newChartData = weeklyCounts.map((count) => ({
-            height: maxCount > 0 ? (count / maxCount) * 100 : 0,
-            color: "bg-green-400",
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            const dateString = `${year}-${month}-${day}`;
+
+            const count = weeklyData[dateString] || 0;
+            days.push(count);
+            dayLabels.push(dayShortNames[date.getDay()]);
+          }
+
+          const maxCount = Math.max(...days, 1);
+
+          const chartData = days.map((count, index) => ({
+            height: count > 0 ? (count / maxCount) * 100 : 2,
+            color: count > 0 ? "bg-green-400" : "bg-red-500/70",
+            label: dayLabels[index],
+            count: count,
           }));
-          setChartData(newChartData);
+          setChartData(chartData);
+
+          // Cache the new data
+          sessionStorage.setItem(
+            "dashboardData",
+            JSON.stringify({ stats, chartData, username }),
+          );
         } else {
           console.error("Failed to fetch dashboard data:", response.statusText);
         }
@@ -191,7 +251,7 @@ export default function Dashboard() {
                   <img src={"https://avatar.iran.liara.run/public/boy"} />
                 </div>
                 <h2 className="text-4xl font-normal bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                  Hannah Smith
+                  {username}
                 </h2>
               </div>
             </div>
@@ -245,14 +305,33 @@ export default function Dashboard() {
             <h3 className="text-lg mb-6 font-normal relative">
               Last Week's Insights
             </h3>
-            <div className="backdrop-blur-md bg-purple-500/10 border border-purple-500/20 rounded-xl p-8 h-64 flex items-end justify-center gap-3 relative">
-              {chartData.map((bar, index) => (
-                <div
-                  key={index}
-                  className={`${bar.color} w-16 rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer shadow-lg`}
-                  style={{ height: `${bar.height}%` }}
-                ></div>
-              ))}
+            <div className="backdrop-blur-md bg-purple-500/10 border border-purple-500/20 rounded-xl p-8 h-64 flex flex-col relative">
+              <div className="flex-grow flex items-end justify-around w-full gap-3">
+                {chartData.map((bar, index) => (
+                  <div
+                    key={index}
+                    className="w-16 h-full flex flex-col justify-end items-center group"
+                  >
+                    <div className="text-xs text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {bar.count}
+                    </div>
+                    <div
+                      className={`${bar.color} w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer shadow-lg`}
+                      style={{ height: `${bar.height}%` }}
+                    ></div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-around mt-2 border-t border-white/10 pt-2">
+                {chartData.map((bar, index) => (
+                  <div
+                    key={index}
+                    className="w-16 text-center text-xs text-gray-400"
+                  >
+                    {bar.label}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

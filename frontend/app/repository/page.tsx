@@ -1,447 +1,254 @@
 "use client";
-
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Search,
-  Filter,
-  Plus,
-  Circle,
-  Edit3,
-  Trash2,
-  Play,
-  Save,
+  ChevronLeft,
+  ChevronRight,
+  FileJson,
+  Server,
+  Route as RouteIcon,
+  X,
 } from "lucide-react";
+import Link from "next/link";
 
-// Repository Page Component
-function RepositoryPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+const base_url = "http://127.0.0.1:8000";
 
-  const repositories = [
-    { name: "/config/users", port: "8743", totalApis: 15, totalTests: 48 },
-    { name: "/users", port: "8743", totalApis: 12, totalTests: 36 },
-    { name: "/profiles", port: "8804", totalApis: 8, totalTests: 24 },
-    { name: "/webhooks", port: "7432", totalApis: 5, totalTests: 15 },
-    { name: "/something-new", port: "7743", totalApis: 3, totalTests: 12 },
-  ];
+function TestDetailModal({ test, onClose }) {
+  if (!test) return null;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-purple-900/30 bg-black/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-purple-900/20 rounded-lg transition-colors">
-                <div className="w-6 h-6 flex flex-col justify-center gap-1">
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                </div>
-              </button>
-              <h1 className="text-3xl font-bold text-white">Repository</h1>
-            </div>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Search and Filters */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-            <input
-              type="text"
-              placeholder="Search URLs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-purple-950/30 border border-purple-900/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-purple-400/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-            />
-          </div>
-          <button className="px-6 py-4 bg-purple-950/30 border border-purple-900/50 rounded-xl text-white hover:bg-purple-900/40 transition-all flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
-          </button>
-        </div>
-
-        {/* Frame Section */}
-        <div className="bg-gradient-to-br from-purple-950/40 to-slate-950/40 border border-purple-900/30 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              Frame
-              <span className="text-sm text-purple-400 font-normal">
-                Production Mode
-              </span>
-            </h2>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-purple-900/30">
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm w-8"></th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Name
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Port Num
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Total APIs
-                    </th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold text-sm">
-                      Total Tests
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {repositories.map((repo, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-purple-900/10 hover:bg-purple-900/10 transition-colors group"
-                    >
-                      <td className="py-4 px-4">
-                        <Circle className="w-4 h-4 text-purple-500" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-white font-mono text-sm">
-                          {repo.name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 font-mono text-sm">
-                          {repo.port}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 text-sm">
-                          {repo.totalApis}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-purple-300 text-sm">
-                          {repo.totalTests}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Route Repository Page Component
-function RouteRepositoryPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const routes = [
-    { name: "UserSignal", port: "8743", totalTests: 24 },
-    { name: "LoginLogic", port: "8743", totalTests: 18 },
-    { name: "StoreStout", port: "8804", totalTests: 12 },
-    { name: "Home", port: "7432", totalTests: 8 },
-    { name: "Custom", port: "7743", totalTests: 6 },
-  ];
+  const { body } = test;
+  const type =
+    body.expected_status_code >= 200 && body.expected_status_code < 300
+      ? "Positive"
+      : "Negative";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
-      <header className="border-b border-indigo-900/30 bg-black/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-indigo-900/20 rounded-lg transition-colors">
-                <div className="w-6 h-6 flex flex-col justify-center gap-1">
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                </div>
-              </button>
-              <h1 className="text-3xl font-bold text-white">
-                Route Repository
-              </h1>
-            </div>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
-            <input
-              type="text"
-              placeholder="Search Routes"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-indigo-950/30 border border-indigo-900/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-indigo-400/50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-          </div>
-          <button className="px-6 py-4 bg-indigo-950/30 border border-indigo-900/50 rounded-xl text-white hover:bg-indigo-900/40 transition-all flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-50">
+      <div className="bg-gradient-to-br from-slate-900 to-purple-950/50 border border-purple-700/50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white">{body.test_name}</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          >
+            <X size={24} />
           </button>
         </div>
-
-        <div className="bg-gradient-to-br from-indigo-950/40 to-slate-950/40 border border-indigo-900/30 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-8 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-full"></div>
-              Frame
-              <span className="text-sm text-indigo-400 font-normal">
-                Production Mode
-              </span>
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-indigo-900/30">
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm w-8"></th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Route
-                    </th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Port Num
-                    </th>
-                    <th className="text-left py-4 px-4 text-indigo-300 font-semibold text-sm">
-                      Total Tests
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {routes.map((route, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-indigo-900/10 hover:bg-indigo-900/10 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <Circle className="w-4 h-4 text-indigo-500" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-white font-mono text-sm">
-                          {route.name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-indigo-300 font-mono text-sm">
-                          {route.port}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-indigo-300 text-sm">
-                          {route.totalTests}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="p-8 overflow-y-auto space-y-6">
+          <div>
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <div className="w-1 h-5 bg-purple-500 rounded"></div>
+              Test Case (Request Body):
+            </h3>
+            <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm font-mono">
+              {JSON.stringify(body.request_body, null, 2)}
+            </pre>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Test Library Page Component
-function TestLibraryPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const tests = [
-    {
-      testCase: {
-        username: "testinguser",
-        password: "TestingXYZ1",
-      },
-      expectedOutcome: {
-        token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ",
-        user: {
-          id: 1,
-          username: "testinguser",
-          email: "testinguser@example.com",
-        },
-      },
-      difficulty: "Medium",
-      type: "Positive",
-      status: "Passed",
-    },
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
-      <header className="border-b border-blue-900/30 bg-black/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-blue-900/20 rounded-lg transition-colors">
-                <div className="w-6 h-6 flex flex-col justify-center gap-1">
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                  <div className="h-0.5 bg-white rounded"></div>
-                </div>
-              </button>
-              <h1 className="text-3xl font-bold text-white">Test Library</h1>
-            </div>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
+          <div>
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <div className="w-1 h-5 bg-green-500 rounded"></div>
+              Expected Outcome:
+            </h3>
+            <pre className="bg-black/40 border border-purple-900/30 rounded-xl p-4 text-purple-200 text-sm font-mono">
+              {JSON.stringify(
+                {
+                  status_code: body.expected_status_code,
+                  body: body.expected_response_body,
+                },
+                null,
+                2,
+              )}
+            </pre>
           </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-            <input
-              type="text"
-              placeholder="Search Tests"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-blue-950/30 border border-blue-900/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-blue-400/50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
-          </div>
-          <button className="px-6 py-4 bg-blue-950/30 border border-blue-900/50 rounded-xl text-white hover:bg-blue-900/40 transition-all flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
-          </button>
-        </div>
-
-        <div className="grid gap-6">
-          {tests.map((test, idx) => (
-            <div
-              key={idx}
-              className="bg-gradient-to-br from-blue-950/40 to-slate-950/40 border border-blue-900/30 rounded-2xl overflow-hidden hover:border-blue-700/50 transition-all backdrop-blur-sm shadow-xl "
+          <div>
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <div className="w-1 h-5 bg-lime-500 rounded"></div>
+              Test Type:
+            </h3>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                type === "Positive"
+                  ? "bg-lime-500/20 text-lime-400"
+                  : "bg-orange-500/20 text-orange-400"
+              }`}
             >
-              <div className="p-8">
-                <div className="flex gap-8 ">
-                  <div className="flex-1 space-y-6 w-1/4">
-                    <div>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <div className="w-1 h-5 bg-blue-500 rounded"></div>
-                        Test Case:
-                      </h3>
-                      <pre className="bg-black/40 border border-blue-900/30 rounded-xl p-4 text-blue-200 text-sm overflow-x-auto font-mono">
-                        {JSON.stringify(test.testCase, null, 2)}
-                      </pre>
-                    </div>
-
-                    <div>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <div className="w-1 h-5 bg-green-500 rounded"></div>
-                        Expected Outcome:
-                      </h3>
-                      <pre className="bg-black/40 border border-blue-900/30 rounded-xl p-4 text-blue-200 text-sm overflow-x-auto font-mono max-h-48">
-                        {JSON.stringify(test.expectedOutcome, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-
-                  <div className="w-64 flex flex-col gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 text-sm">
-                          Difficulty
-                        </span>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400">
-                          {test.difficulty}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 text-sm">Type</span>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-lime-500/20 text-lime-400">
-                          {test.type}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 text-sm">Status</span>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-                          {test.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mt-auto">
-                      <button className="w-full px-4 py-3 bg-white/90 hover:bg-white border border-blue-900/50 rounded-lg text-slate-900 font-semibold transition-all">
-                        Run New Test
-                      </button>
-                      <button className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-blue-900/50 rounded-lg text-white transition-all flex items-center justify-center gap-2">
-                        <Play className="w-4 h-4" />
-                        Get Test
-                      </button>
-                      <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg text-white font-semibold transition-all shadow-lg shadow-blue-500/30">
-                        Update Test
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+              {type}
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Main App Component with Navigation
-export default function App() {
-  const [currentPage, setCurrentPage] = useState("repository");
+export default function Repository() {
+  const [urls, setUrls] = useState([]);
+  const [selectedUrl, setSelectedUrl] = useState(null);
+  const [testsByRoute, setTestsByRoute] = useState({});
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTest, setSelectedTest] = useState(null);
+
+  useEffect(() => {
+    const fetchUrls = async () => {
+      const token = localStorage.getItem("userToken");
+      if (!token) return;
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${base_url}/history/url`, {
+          headers: { token },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUrls(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch URLs:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchUrls();
+  }, []);
+
+  useEffect(() => {
+    const fetchTestsForUrl = async () => {
+      if (!selectedUrl) return;
+      const token = localStorage.getItem("userToken");
+      if (!token) return;
+      setIsLoading(true);
+      setTestsByRoute({});
+      setSelectedRoute(null);
+      try {
+        const response = await fetch(`${base_url}/history/tests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", token },
+          body: JSON.stringify({ id: selectedUrl.url_id }),
+        });
+        if (response.ok) {
+          const testsData = await response.json();
+          const grouped = testsData.reduce((acc, test) => {
+            try {
+              const body = JSON.parse(test.body);
+              const routeName = body.route || "uncategorized";
+              if (!acc[routeName]) acc[routeName] = [];
+              acc[routeName].push({ ...test, body });
+              return acc;
+            } catch (e) {
+              console.warn("Failed to parse test body:", test);
+              return acc;
+            }
+          }, {});
+          setTestsByRoute(grouped);
+        }
+      } catch (error) {
+        console.error("Failed to fetch tests:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchTestsForUrl();
+  }, [selectedUrl]);
 
   return (
-    <div className="min-h-screen">
-      {/* Page Selector - for demo purposes */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full p-1 flex gap-1">
-        <button
-          onClick={() => setCurrentPage("repository")}
-          className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-            currentPage === "repository"
-              ? "bg-purple-600 text-white"
-              : "text-white/70 hover:text-white"
-          }`}
+    <div className="h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white flex flex-col">
+      <TestDetailModal
+        test={selectedTest}
+        onClose={() => setSelectedTest(null)}
+      />
+      <header className="p-4 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center gap-4">
+        <Link
+          href="/dashboard"
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
         >
-          Repository
-        </button>
-        <button
-          onClick={() => setCurrentPage("routes")}
-          className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-            currentPage === "routes"
-              ? "bg-indigo-600 text-white"
-              : "text-white/70 hover:text-white"
-          }`}
-        >
-          Route Repository
-        </button>
-        <button
-          onClick={() => setCurrentPage("tests")}
-          className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-            currentPage === "tests"
-              ? "bg-blue-600 text-white"
-              : "text-white/70 hover:text-white"
-          }`}
-        >
-          Test Library
-        </button>
-      </div>
-
-      {/* Render Current Page */}
-      <div className="pt-16">
-        {currentPage === "repository" && <RepositoryPage />}
-        {currentPage === "routes" && <RouteRepositoryPage />}
-        {currentPage === "tests" && <TestLibraryPage />}
-      </div>
+          <ChevronLeft size={20} />
+        </Link>
+        <h1 className="text-xl font-bold">Repository</h1>
+      </header>
+      <main className="flex-1 flex overflow-hidden">
+        <div className="w-1/3 border-r border-white/10 overflow-y-auto">
+          <div className="p-4 border-b border-white/10 sticky top-0 backdrop-blur-md bg-slate-950/50">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Server size={18} /> APIs / URLs
+            </h2>
+          </div>
+          {isLoading && !urls.length ? (
+            <p className="p-4 text-gray-400">Loading APIs...</p>
+          ) : (
+            <ul>
+              {urls.map((url) => (
+                <li key={url.url_id}>
+                  <button
+                    onClick={() => setSelectedUrl(url)}
+                    className={`w-full text-left p-4 flex justify-between items-center transition-colors duration-200 ${
+                      selectedUrl?.url_id === url.url_id
+                        ? "bg-purple-500/30"
+                        : "hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="font-mono">{url.urlname}</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="w-1/3 border-r border-white/10 overflow-y-auto">
+          <div className="p-4 border-b border-white/10 sticky top-0 backdrop-blur-md bg-slate-950/50">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <RouteIcon size={18} /> Routes
+            </h2>
+          </div>
+          {selectedUrl &&
+            (isLoading ? (
+              <p className="p-4 text-gray-400">Loading routes...</p>
+            ) : (
+              <ul>
+                {Object.keys(testsByRoute).map((route) => (
+                  <li key={route}>
+                    <button
+                      onClick={() => setSelectedRoute(route)}
+                      className={`w-full text-left p-4 flex justify-between items-center transition-colors duration-200 ${
+                        selectedRoute === route
+                          ? "bg-purple-500/30"
+                          : "hover:bg-white/10"
+                      }`}
+                    >
+                      <span className="font-mono">{route}</span>
+                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                        {testsByRoute[route].length}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+        </div>
+        <div className="w-1/3 overflow-y-auto">
+          <div className="p-4 border-b border-white/10 sticky top-0 backdrop-blur-md bg-slate-950/50">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <FileJson size={18} /> Tests
+            </h2>
+          </div>
+          {selectedRoute && (
+            <ul className="p-4 space-y-2">
+              {testsByRoute[selectedRoute].map((test) => (
+                <li key={test.id}>
+                  <button
+                    onClick={() => setSelectedTest(test)}
+                    className="w-full text-left bg-white/5 p-3 rounded-lg border border-white/10 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all"
+                  >
+                    <p className="font-semibold text-white">
+                      {test.body.test_name}
+                    </p>
+                    <p className="text-sm text-gray-400 font-mono">
+                      {test.body.request_method}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
