@@ -118,52 +118,43 @@ function GeneratedTestsPage({ sidebarOpen }) {
   const [tests, setTests] = useState([]);
 
   useEffect(() => {
-    const fetchTests = async () => {
+    const loadTests = () => {
       try {
-        console.log("Attempting to fetch tests...");
-        const token = localStorage.getItem("userToken");
-        if (!token) {
-          console.error("Authentication token not found. Please log in.");
+        console.log("Attempting to load tests from storage...");
+        const storedTests = localStorage.getItem("tests");
+        if (!storedTests) {
+          console.log("No tests found in local storage.");
+          setTests([]);
           return;
         }
 
-        const response = await fetch(`${base_url}/history/`, {
-          headers: {
-            token: token,
-          },
-        });
+        const data = JSON.parse(storedTests);
+        console.log("Successfully loaded tests:", data);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(
-            `API request failed with status ${response.status}: ${errorText}`,
-          );
-          throw new Error(`API request failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log("Successfully fetched tests:", data);
-
-        const formattedTests = data.map((item) => {
-          const body = JSON.parse(item.body);
+        const formattedTests = data.map((item, index) => {
           return {
-            id: item.id,
-            testCase: body.test_case,
-            expectedOutcome: body.expected_response,
-            difficulty: "Medium", // Placeholder
+            id: item.test_name || index,
+            testCase: item.request_body,
+            expectedOutcome: {
+              status_code: item.expected_status_code,
+              body: item.expected_response_body,
+            },
+            difficulty: "Medium",
             type:
-              body.expected_response.status_code === 200
+              item.expected_status_code >= 200 &&
+              item.expected_status_code < 300
                 ? "Positive"
                 : "Negative",
           };
         });
         setTests(formattedTests);
       } catch (error) {
-        console.error("An error occurred while fetching tests:", error);
+        console.error("An error occurred while loading tests:", error);
+        setTests([]); // Clear tests on error
       }
     };
 
-    fetchTests();
+    loadTests();
   }, []);
 
   return (

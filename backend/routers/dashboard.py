@@ -54,17 +54,9 @@ def get_dashboard_stats(
         if day in daily_counts:
             daily_counts[day] += 1
 
-    # This is a placeholder for positive case logic
-    positive_cases = 0
-    for test in db.query(Test).filter(Test.user_id == user_id).all():
-        body = json.loads(test.body)
-        if body.get("expected_response", {}).get("status_code") == 200:
-            positive_cases += 1
-
     return {
         "total_tests": total_tests,
         "total_urls": total_urls,
         "total_routes": total_routes,
         "weekly_tests": daily_counts,
-        "positive_cases": positive_cases,
     }

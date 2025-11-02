@@ -12,12 +12,14 @@ import {
   Mail,
   FileText,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const base_url = "http://127.0.0.1:8000";
 
 export default function APITestGenerator() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     apiUrl: "",
     requestFormat: "",
@@ -44,25 +46,46 @@ export default function APITestGenerator() {
     }));
   };
 
-  const handleGenerateTests = () => {
+  const handleGenerateTests = async () => {
+    setIsLoading(true);
     console.log("Generating tests with:", formData);
     const prompt = JSON.stringify(formData);
     const token = localStorage.getItem("userToken");
     if (!token) {
       console.error("No token found");
+      setIsLoading(false);
       return;
     }
-    const response = fetch(`${base_url}/api/generate-tests`, {
-      method: "POST",
-      body: JSON.stringify({
-        prompt: prompt,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        token: token,
-      },
-    });
-    console.log(response);
+    try {
+      const response = await fetch(`${base_url}/api/generate-tests`, {
+        method: "POST",
+        body: JSON.stringify({
+          prompt: prompt,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `API request failed with status ${response.status}: ${errorText}`,
+        );
+        // Maybe show an error to the user
+        return;
+      }
+
+      const testsData = await response.json();
+      localStorage.setItem("tests", JSON.stringify(testsData));
+      console.log("Tests generated and stored:", testsData);
+      router.push("./results");
+    } catch (error) {
+      console.error("An error occurred while generating tests:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -216,15 +239,14 @@ export default function APITestGenerator() {
 
               {/* Generate Button */}
               <div className="flex justify-end pt-6">
-                <Link href="./results">
-                  <button
-                    onClick={handleGenerateTests}
-                    className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105"
-                  >
-                    Generate Tests
-                    <span>→</span>
-                  </button>
-                </Link>
+                <button
+                  onClick={handleGenerateTests}
+                  disabled={isLoading}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Generating..." : "Generate Tests"}
+                  {!isLoading && <span>→</span>}
+                </button>
               </div>
             </div>
           </div>

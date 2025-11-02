@@ -2671,6 +2671,14 @@
     --tw-outline-style: none;
     outline-style: none;
   }
+
+  .disabled\:cursor-not-allowed:disabled {
+    cursor: not-allowed;
+  }
+
+  .disabled\:opacity-50:disabled {
+    opacity: .5;
+  }
 }
 
 :root {
