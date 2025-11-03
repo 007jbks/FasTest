@@ -142,7 +142,6 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden">
-      {/* Animated background blur circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div
@@ -155,13 +154,11 @@ export default function Dashboard() {
         ></div>
       </div>
 
-      {/* Sidebar - Keep original styling */}
       <div
         className={`${
           sidebarOpen ? "w-60" : "w-0"
         } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden relative z-10`}
       >
-        {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
 
         <div className="p-6 relative">
@@ -221,7 +218,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Toggle Button for Closed Sidebar */}
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
@@ -231,74 +227,52 @@ export default function Dashboard() {
         </button>
       )}
 
-      {/* Main Content */}
       <div className="flex-1 overflow-auto relative z-10">
         <div className="p-8">
-          {/* Plus Button */}
-          <Link href="./main">
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full fixed top-5 right-5 hover:scale-105 transition-transform shadow-lg shadow-lime-500/50 z-20">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
-          </Link>
-
-          {/* Profile Card - Glassmorphic */}
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 mb-8 shadow-2xl relative">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
 
             <div className="flex items-center justify-between mb-12 relative">
-              <div className="flex items-center gap-4">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 to-green-500 shadow-lg shadow-lime-400/30">
-                  <img src={"https://avatar.iran.liara.run/public/boy"} />
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 to-green-500 shadow-lg shadow-lime-400/30 flex-shrink-0">
+                  <img
+                    src={"https://avatar.iran.liara.run/public/boy"}
+                    alt="User Avatar"
+                    className="rounded-full"
+                  />
                 </div>
-                <h2 className="text-4xl font-normal bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                  {username}
-                </h2>
+                <div>
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                    Welcome, {username}
+                  </h2>
+                  <p className="text-purple-200/70 mt-1">
+                    Here's your activity overview.
+                  </p>
+                </div>
               </div>
+              <Link href="./main">
+                <button className="flex items-center gap-2 bg-gradient-to-br from-lime-400 to-green-500 text-black font-bold py-3 px-5 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50 z-20">
+                  <Plus className="w-5 h-5" />
+                  <span>New Test</span>
+                </button>
+              </Link>
             </div>
 
-            {/* Stats Cards */}
-            <div className="flex gap-8 justify-center relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               {stats.map((stat, index) => (
                 <div
                   key={index}
-                  className="relative flex items-center justify-center group cursor-pointer"
+                  className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-6 transition-all duration-300 hover:border-purple-400/50 hover:bg-white/10"
                 >
-                  <svg className="w-36 h-36 transform -rotate-90 transition-transform group-hover:scale-110">
-                    <circle
-                      cx="72"
-                      cy="72"
-                      r="60"
-                      stroke="url(#gradient)"
-                      strokeWidth="4"
-                      fill="none"
-                      strokeLinecap="round"
-                      className="transition-all"
-                    />
-                    <defs>
-                      <linearGradient
-                        id="gradient"
-                        x1="0%"
-                        y1="0%"
-                        x2="0%"
-                        y2="100%"
-                      >
-                        <stop offset="0%" stopColor="#8b5cf6" />
-                        <stop offset="100%" stopColor="#f97316" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <div className="text-2xl font-semibold group-hover:scale-110 transition-transform">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-gray-400">{stat.label}</div>
-                  </div>
+                  <p className="text-sm text-purple-200/70 mb-1">
+                    {stat.label}
+                  </p>
+                  <p className="text-4xl font-bold text-white">{stat.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Chart Section - Glassmorphic */}
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl relative">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
 
