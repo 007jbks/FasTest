@@ -136,7 +136,7 @@ export default function Dashboard() {
       active: false,
       link: "./repository",
     },
-    { icon: User, label: "Account", active: false, link: "./dashboard" },
+    { icon: User, label: "Account", active: false, link: "./account" },
     { icon: Settings, label: "Settings", active: false, link: "./dashboard" },
   ];
 
@@ -253,7 +253,7 @@ export default function Dashboard() {
               <Link href="./main">
                 <button className="flex items-center gap-2 bg-gradient-to-br from-lime-400 to-green-500 text-black font-bold py-3 px-5 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50 z-20">
                   <Plus className="w-5 h-5" />
-                  <span>New Test</span>
+                  <span>New Project</span>
                 </button>
               </Link>
             </div>

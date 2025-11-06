@@ -11,71 +11,68 @@ import {
   FileText,
   PlusCircle,
   Search,
+  ChevronLeft,
+  Filter,
   Edit,
   Trash2,
 } from "lucide-react";
 
-const mockProjects = [
+const mockRoutes = [
   {
     id: 1,
-    name: "E-commerce Platform API",
-    description:
-      "A robust API for managing products, orders, and customer data for an online retail application.",
-    lastUpdated: "2 days ago",
-    totalTests: 128,
-    passPercentage: 93,
+    name: "/api/products",
+    method: "GET",
+    description: "Fetches a list of all products.",
+    totalTests: 25,
+    passPercentage: 92,
   },
   {
     id: 2,
-    name: "Social Media Analytics Dashboard",
-    description:
-      "Backend services for a dashboard that tracks and visualizes social media engagement metrics.",
-    lastUpdated: "5 days ago",
-    totalTests: 256,
-    passPercentage: 88,
+    name: "/api/products/:id",
+    method: "GET",
+    description: "Fetches details of a specific product by its ID.",
+    totalTests: 15,
+    passPercentage: 100,
   },
   {
     id: 3,
-    name: "Inventory Management System",
-    description:
-      "A system for tracking stock levels, managing suppliers, and automating purchase orders.",
-    lastUpdated: "1 week ago",
-    totalTests: 95,
-    passPercentage: 99,
+    name: "/api/orders",
+    method: "POST",
+    description: "Creates a new order with the provided items.",
+    totalTests: 30,
+    passPercentage: 85,
   },
   {
     id: 4,
-    name: "Healthcare Patient Portal",
-    description:
-      "A secure portal for patients to access their medical records, book appointments, and communicate with doctors.",
-    lastUpdated: "2 weeks ago",
-    totalTests: 312,
-    passPercentage: 91,
+    name: "/api/users/register",
+    method: "POST",
+    description: "Registers a new user account.",
+    totalTests: 40,
+    passPercentage: 95,
   },
   {
     id: 5,
-    name: "Travel Booking API",
-    description:
-      "An API that provides flight, hotel, and car rental booking functionalities for a travel agency.",
-    lastUpdated: "1 month ago",
-    totalTests: 180,
-    passPercentage: 96,
+    name: "/api/users/login",
+    method: "POST",
+    description: "Authenticates a user and returns a token.",
+    totalTests: 18,
+    passPercentage: 89,
   },
 ];
 
-export default function Repository() {
+export default function ProjectRoutes() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navItems = [
-    { icon: Home, label: "Home", active: false, link: "./dashboard" },
+    { icon: Home, label: "Home", active: false, link: "/dashboard" },
     {
       icon: Database,
       label: "Repository",
       active: true,
-      link: "./repository",
+      link: "/repository",
     },
-    { icon: User, label: "Account", active: false, link: "./account" },
-    { icon: Settings, label: "Settings", active: false, link: "./settings" },
+    { icon: User, label: "Account", active: false, link: "/account" },
+    { icon: Settings, label: "Settings", active: false, link: "/settings" },
   ];
 
   return (
@@ -165,9 +162,18 @@ export default function Repository() {
 
       <div className="flex-1 flex flex-col p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold tracking-wider">
-            Project Repository
-          </h1>
+          <div>
+            <a
+              href="/repository"
+              className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-2"
+            >
+              <ChevronLeft size={20} />
+              Back to Repository
+            </a>
+            <h1 className="text-4xl font-bold tracking-wider">
+              E-commerce Platform API Routes
+            </h1>
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search
@@ -176,65 +182,69 @@ export default function Repository() {
               />
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search routes..."
                 className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all duration-300"
               />
             </div>
-            <a
-              href="/Project"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105"
-            >
-              <PlusCircle size={20} />
-              <span>Create New Project</span>
-            </a>
+            <button className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300">
+              <Filter size={20} />
+              <span>Filter</span>
+            </button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mockProjects.map((project) => (
+        <div className="space-y-4">
+          {mockRoutes.map((route) => (
             <div
-              key={project.id}
-              className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex flex-col justify-between"
+              key={route.id}
+              className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex items-center justify-between"
             >
-              <div>
-                <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-                <p className="text-gray-300 text-sm mb-4">
-                  {project.description}
-                </p>
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <div className="flex gap-4">
-                  <div>
-                    <p className="text-xs text-gray-400">Total Tests</p>
-                    <p className="font-bold">{project.totalTests}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Pass Rate</p>
-                    <p
-                      className={`font-bold ${
-                        project.passPercentage > 90
-                          ? "text-green-400"
-                          : "text-yellow-400"
-                      }`}
-                    >
-                      {project.passPercentage}%
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href="/routes"
-                    className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/20 transition-colors"
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-2">
+                  <span
+                    className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                      route.method === "GET"
+                        ? "bg-blue-500/20 text-blue-300"
+                        : "bg-green-500/20 text-green-300"
+                    }`}
                   >
-                    View
-                  </a>
-                  <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
-                    <Edit size={16} />
-                  </button>
-                  <button className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors">
-                    <Trash2 size={16} />
-                  </button>
+                    {route.method}
+                  </span>
+                  <h2 className="text-xl font-semibold font-mono">
+                    {route.name}
+                  </h2>
                 </div>
+                <p className="text-gray-300 text-sm">{route.description}</p>
+              </div>
+              <div className="flex items-center gap-8">
+                <div>
+                  <p className="text-gray-400 text-sm">Total Tests</p>
+                  <p className="text-2xl font-bold">{route.totalTests}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Pass Rate</p>
+                  <p
+                    className={`text-2xl font-bold ${
+                      route.passPercentage > 90
+                        ? "text-green-400"
+                        : "text-yellow-400"
+                    }`}
+                  >
+                    {route.passPercentage}%
+                  </p>
+                </div>
+                <a
+                  href="/tests"
+                  className="px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors"
+                >
+                  View Tests
+                </a>
+                <button className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                  <Edit size={20} />
+                </button>
+                <button className="p-3 bg-red-500/20 text-red-300 rounded-xl hover:bg-red-500/30 transition-colors">
+                  <Trash2 size={20} />
+                </button>
               </div>
             </div>
           ))}

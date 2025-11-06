@@ -32,73 +32,6 @@ function Sidebar({ sidebarOpen, setSidebarOpen, currentPage, setCurrentPage }) {
 
   return (
     <>
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 h-full ${
-          sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden z-40`}
-      >
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
-
-        <div className="p-6 relative">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 hover:border-white/20"
-          >
-            <X size={24} />
-          </button>
-
-          <nav className="space-y-2">
-            {navItems.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentPage(item.page)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group ${
-                  currentPage === item.page
-                    ? "bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border border-purple-400/30 backdrop-blur-sm shadow-lg shadow-purple-500/20"
-                    : "text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm border border-transparent hover:border-white/20"
-                }`}
-              >
-                <item.icon
-                  size={20}
-                  className={`${
-                    currentPage === item.page
-                      ? "text-purple-300"
-                      : "group-hover:text-purple-300 transition-colors"
-                  }`}
-                />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="mt-auto p-6 space-y-3 text-sm border-t border-white/10 backdrop-blur-sm relative">
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <Mail
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Contact Us</span>
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <FileText
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Policies</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Toggle Button for Closed Sidebar */}
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
@@ -137,7 +70,6 @@ function GeneratedTestsPage({ sidebarOpen }) {
       setEditingTest({ id: null, content: "" });
     } catch (error) {
       console.error("Invalid JSON format:", error);
-      // Optionally, show an error message to the user
     }
   };
 
@@ -233,11 +165,14 @@ function GeneratedTestsPage({ sidebarOpen }) {
       {/* Header */}
       <header className="border-b border-purple-900/30 bg-black/20 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <a
+              href="/dashboard"
+              className="flex items-center gap-2 text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <Home size={20} />
+            </a>
             <h1 className="text-3xl font-bold text-white">Generated Tests</h1>
-            <button className="w-12 h-12 bg-gradient-to-br from-lime-400 to-green-500 rounded-full hover:scale-105 transition-transform shadow-lg shadow-lime-500/50">
-              <Plus className="w-6 h-6 mx-auto text-black" />
-            </button>
           </div>
         </div>
       </header>
@@ -410,9 +345,7 @@ export default function App() {
       />
 
       {/* Main Content with padding for sidebar */}
-      <div
-        className={`transition-all duration-300 ${sidebarOpen ? "ml-60" : "ml-0"}`}
-      >
+      <div className={`transition-all duration-300`}>
         {currentPage === "tests" && (
           <GeneratedTestsPage sidebarOpen={sidebarOpen} />
         )}

@@ -69,6 +69,81 @@ def get_user(token: str = Header(...), db: Session = Depends(get_db)):
         user = db.query(User).filter(User.id == user_id).first()
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
-        return {"username": user.username}
+        return {"username": user.username, "email": user.email}
+    except:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+
+class UpdateUsername(BaseModel):
+    username: str
+
+
+@router.put("/me/username")
+def update_username(
+    data: UpdateUsername, token: str = Header(...), db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        user_id = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.username = data.username
+        db.commit()
+        return {"message": "Username updated successfully"}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+class UpdateEmail(BaseModel):
+    email: str
+
+
+@router.put("/me/email")
+def update_email(
+    data: UpdateEmail, token: str = Header(...), db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        user_id = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.email = data.email
+        db.commit()
+        return {"message": "Email updated successfully"}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+class UpdatePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.put("/me/password")
+def update_password(
+    data: UpdatePassword, token: str = Header(...), db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        user_id = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not bcrypt.checkpw(
+            data.current_password.encode("utf-8"), user.password.encode("utf-8")
+        ):
+            raise HTTPException(status_code=400, detail="Incorrect current password")
+        hashed_pw = bcrypt.hashpw(data.new_password.encode("utf-8"), bcrypt.gensalt())
+        user.password = hashed_pw.decode("utf-8")
+        db.commit()
+        return {"message": "Password updated successfully"}
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
