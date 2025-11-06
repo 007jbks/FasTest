@@ -367,10 +367,13 @@ export default function RouteTests() {
                 <PlusCircle size={20} />
                 <span>Generate Test</span>
               </a>
-              <button className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300">
+              <a
+                href="/test"
+                className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300"
+              >
                 <PlusCircle size={20} />
                 <span>Add Manual Test</span>
-              </button>
+              </a>
             </div>
           </header>
 

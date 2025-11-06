@@ -7,5 +7,6 @@
   "/register/page": "app/register/page.js",
   "/repository/page": "app/repository/page.js",
   "/routes/page": "app/routes/page.js",
+  "/test/page": "app/test/page.js",
   "/tests/page": "app/tests/page.js"
 }
