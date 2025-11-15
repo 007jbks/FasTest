@@ -47,7 +47,7 @@ export default function Register() {
 
     try {
       const data = await register(username, email, password);
-      console.log("Registration successful:", data);
+
       if (data.token) {
         localStorage.setItem("userToken", data.token);
         router.push("/dashboard");
