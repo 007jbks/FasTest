@@ -8,7 +8,7 @@ from db import get_db
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
-from models import Project, Route, Test, User
+from models import Project, Route, Test, TestResult, User
 from pydantic import BaseModel
 from sqlalchemy import func, literal_column
 from sqlalchemy.orm import Session
@@ -579,17 +579,6 @@ def delete_route(
     return {"message": "Route deleted successfully"}
 
 
-import json
-import os
-
-import httpx
-import jwt
-from db import get_db
-from fastapi import APIRouter, Depends, Header, HTTPException
-from models import Project, Route, Test, TestResult
-from sqlalchemy.orm import Session
-
-
 @router.post("/run-tests/{project_id}/{route_id}")
 async def run_route_tests(
     project_id: int,
@@ -597,7 +586,7 @@ async def run_route_tests(
     token: str = Header(...),
     db: Session = Depends(get_db),
 ):
-    # AUTH + VALIDATION (unchanged)
+    # ---------------- AUTH -----------------
     try:
         user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
             "id"
@@ -605,6 +594,7 @@ async def run_route_tests(
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+    # ---------------- VALIDATE PROJECT -----------------
     project = (
         db.query(Project)
         .filter(Project.project_id == project_id, Project.user_id == user_id)
@@ -613,6 +603,7 @@ async def run_route_tests(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # ---------------- VALIDATE ROUTE -----------------
     route = (
         db.query(Route)
         .filter(Route.route_id == route_id, Route.project_id == project_id)
@@ -621,6 +612,7 @@ async def run_route_tests(
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
 
+    # ---------------- GET TESTS -----------------
     tests = (
         db.query(Test)
         .filter(Test.project_id == project_id, Test.route_id == route_id)
@@ -629,16 +621,39 @@ async def run_route_tests(
 
     results = []
     passed_count = 0
-    pending_results = []  # Collect results here
+    pending_results = []
 
     async with httpx.AsyncClient() as client:
         for t in tests:
-            body = json.loads(t.body)
+            # --------- FIX: SAFE JSON PARSE ---------
+            raw = t.body
+            if isinstance(raw, str):
+                try:
+                    body = json.loads(raw)
+                except:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Stored JSON for test {t.id} is invalid",
+                    )
+            elif isinstance(raw, dict):
+                body = raw
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Stored test body for test {t.id} is not valid JSON",
+                )
 
-            expected = body["expected_status_code"]
-            req_method = body["request_method"]
+            # --------- SAFE KEY ACCESS ----------
+            expected = body.get("expected_status_code")
+            req_method = body.get("request_method")
             req_headers = body.get("request_headers", {})
             req_body = body.get("request_body", {})
+
+            if expected is None or req_method is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Test {t.id} missing 'expected_status_code' or 'request_method'",
+                )
 
             url = f"{project.projectUrl.rstrip('/')}/{route.routename.lstrip('/')}"
 
@@ -659,7 +674,7 @@ async def run_route_tests(
                 actual_body = str(e)
                 passed = False
 
-            # Add to in-memory list instead of committing each time
+            # Store result safely
             pending_results.append(
                 TestResult(
                     test_id=t.id,
@@ -681,7 +696,7 @@ async def run_route_tests(
                 }
             )
 
-    # Commit once (MUCH faster)
+    # Single commit
     db.add_all(pending_results)
     db.commit()
 
@@ -703,7 +718,7 @@ async def run_single_test(
     token: str = Header(...),
     db: Session = Depends(get_db),
 ):
-    # AUTH
+    # ---------------- AUTH -----------------
     try:
         user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
             "id"
@@ -718,15 +733,32 @@ async def run_single_test(
     project = db.query(Project).filter(Project.project_id == test.project_id).first()
     route = db.query(Route).filter(Route.route_id == test.route_id).first()
 
-    body = json.loads(test.body)
+    # ---------------- SAFE JSON PARSE -----------------
+    raw = test.body
+    if isinstance(raw, str):
+        try:
+            body = json.loads(raw)
+        except:
+            raise HTTPException(status_code=500, detail="Stored JSON is invalid")
+    elif isinstance(raw, dict):
+        body = raw
+    else:
+        raise HTTPException(status_code=500, detail="Stored body is not valid JSON")
 
-    expected = body["expected_status_code"]
-    req_method = body["request_method"]
+    expected = body.get("expected_status_code")
+    req_method = body.get("request_method")
     req_headers = body.get("request_headers", {})
     req_body = body.get("request_body", {})
 
+    if expected is None or req_method is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing expected_status_code or request_method",
+        )
+
     url = f"{project.projectUrl.rstrip('/')}/{route.routename.lstrip('/')}"
 
+    # ---------------- RUN REQUEST -----------------
     async with httpx.AsyncClient() as client:
         try:
             response = await client.request(
@@ -739,24 +771,24 @@ async def run_single_test(
             actual = response.status_code
             actual_body = response.text
             passed = actual == expected
-
         except Exception as e:
             actual = None
             actual_body = str(e)
             passed = False
 
-    # STORE RESULT
-    tr = TestResult(
-        test_id=test.id,
-        passed=passed,
-        actual_status=actual,
-        actual_body=actual_body,
+    # ---------------- STORE RESULT -----------------
+    db.add(
+        TestResult(
+            test_id=test.id,
+            passed=passed,
+            actual_status=actual,
+            actual_body=actual_body,
+        )
     )
-    db.add(tr)
     db.commit()
 
-    # RECALCULATE PASS RATE
-    all_tests = db.query(Test).filter(Test.route_id == route.route_id).count()
+    # ---------------- RECALC PASS RATE -----------------
+    total = db.query(Test).filter(Test.route_id == route.route_id).count()
 
     passed_tests = (
         db.query(TestResult)
@@ -765,7 +797,7 @@ async def run_single_test(
         .count()
     )
 
-    percentage = (passed_tests / all_tests * 100) if all_tests > 0 else 0
+    percentage = (passed_tests / total * 100) if total > 0 else 0
 
     return {
         "test_id": test_id,
