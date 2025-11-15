@@ -1,14 +1,8 @@
-from fastapi.middleware.cors import CORSMiddleware
-from routers import dashboard
 from fastapi import FastAPI
-from routers import auth, api_creation, history
-from db import get_db, engine, Base
-from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 
-# Base.metadata.drop_all(bind=engine)  # this is for testing i must remove this later
-
-Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,6 +11,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+from db import Base, engine, get_db
+from routers import api_creation, auth, dashboard, history
+from sqlalchemy.orm import Session
+
+Base.metadata.create_all(bind=engine)
+
 
 app.include_router(auth.router)
 app.include_router(api_creation.router)

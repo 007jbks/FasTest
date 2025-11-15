@@ -1,23 +1,29 @@
-from tomllib import load
-from .model import api_tests
-from fastapi import APIRouter, Depends, HTTPException, Header
-from models import User, Test, Url, Route
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from db import get_db
 import json
-import jwt
 import os
-from dotenv import load_dotenv
-from typing import Dict, Any
+from typing import Any, Dict
 
+import jwt
+from db import get_db
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, Header, HTTPException
+from models import Project, Route, Test, Url, User
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from tomllib import load
+
+from .model import api_tests
 
 load_dotenv()
 router = APIRouter(prefix="/history", tags=["history"])
 
 
+class ProjectId(BaseModel):
+    id: int
+
+
 @router.get("/url")
 def get_all_urls(
+    project_id: ProjectId,
     token: str = Header(...),
     db: Session = Depends(get_db),
 ):
@@ -33,7 +39,7 @@ def get_all_urls(
     urls = (
         db.query(Url)
         .join(Test, Test.url_id == Url.url_id)
-        .filter(Test.user_id == user_id)
+        .filter(Test.user_id == user_id, Test.project_id == project_id.id)
         .distinct()
         .all()
     )
@@ -42,6 +48,7 @@ def get_all_urls(
 
 class UrlId(BaseModel):
     id: int
+    project_id: int
 
 
 @router.post("/tests")
@@ -61,7 +68,13 @@ def get_tests_for_url(
         raise HTTPException(status_code=404, detail="User not found")
 
     tests = (
-        db.query(Test).filter(Test.user_id == user_id, Test.url_id == url_id.id).all()
+        db.query(Test)
+        .filter(
+            Test.user_id == user_id,
+            Test.url_id == url_id.id,
+            Test.project_id == url_id.project_id,
+        )
+        .all()
     )
     return tests
 
