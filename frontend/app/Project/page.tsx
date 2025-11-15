@@ -12,7 +12,6 @@ import {
   Mail,
   FileText,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const base_url = "http://127.0.0.1:8000";
 
@@ -45,7 +44,7 @@ export default function CreateProject() {
     }
   }, []);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+
   const [formData, setFormData] = useState({
     projectName: "",
     businessLogic: "",
