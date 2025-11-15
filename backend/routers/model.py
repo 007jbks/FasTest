@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,23 +17,17 @@ llm = ChatGoogleGenerativeAI(
 
 ref = """
 {
-    "base_url":"127.0.0.1",
-    "route" : "/login",
-    "test_name": "Successful Login with Valid Credentials",
-    "request_method": "POST",
-    "request_headers": {
-      "Content-Type": "application/json"
-    },
-    "request_body": {
-      "email": "user@example.com",
-      "password": "SecurePassword123"
-    },
+  "project_id": 1,
+  "route": "/login",
+  "body": {
+    "test_name": "...",
+    "request_method": "...",
+    "request_headers": { ... },
+    "request_body": { ... },
     "expected_status_code": 200,
-    "expected_response_body": {
-      "message": "Login successful",
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NSIsImlhdCI6MTY3ODkwMTIzNH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-    }
+    "expected_response_body": { ... }
   }
+}
 """
 
 

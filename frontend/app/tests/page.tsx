@@ -230,9 +230,21 @@ export default function RouteTests() {
         <div className="flex-1 p-8 overflow-y-auto">
           <header className="flex justify-between mb-8">
             <div>
-              <a href="/routes" className="flex items-center gap-2 mb-2">
-                <ChevronLeft /> Back to Routes
-              </a>
+              <button
+                onClick={() => {
+                  // go back in history
+                  window.history.back();
+                  // force reload (needed to re-trigger the useEffect)
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 0);
+                }}
+                className="flex items-center gap-2 text-gray-300 hover:text-white mb-2"
+              >
+                <ChevronLeft size={20} />
+                Back to Repository
+              </button>
+
               <h1 className="text-4xl font-bold tracking-wider">Tests</h1>
             </div>
 

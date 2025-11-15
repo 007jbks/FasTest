@@ -17,6 +17,7 @@ from db import Base, engine, get_db
 from routers import api_creation, auth, dashboard, history
 from sqlalchemy.orm import Session
 
+# Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 

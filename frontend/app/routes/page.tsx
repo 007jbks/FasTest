@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Menu,
   Home,
@@ -10,9 +10,7 @@ import {
   User,
   Settings,
   X,
-  Search,
   ChevronLeft,
-  Filter,
   Edit,
   Trash2,
   PlusCircle,
@@ -22,39 +20,50 @@ const base_url = "http://localhost:8000";
 
 export default function ProjectRoutes() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const projectId = searchParams.get("project_id");
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [routes, setRoutes] = useState([]);
   const [projectName, setProjectName] = useState("Project");
+  const [loading, setLoading] = useState(true);
 
   // MODALS
   const [editModal, setEditModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
 
-  // currently selected route
   const [selectedRoute, setSelectedRoute] = useState(null);
 
-  // edit form
   const [editData, setEditData] = useState({
     routename: "",
     method: "GET",
   });
 
-  /** --------------------------
-   * FETCH ROUTES + PROJECT INFO
-   ---------------------------*/
+  /** ----------------------------------------
+   * FETCH ROUTES (WITH FIXED CACHING)
+   -----------------------------------------*/
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) return; // wait until projectId exists
 
+    const CACHE_KEY = `routes_${projectId}`;
+    const token = localStorage.getItem("userToken");
+    if (!token) return;
+
+    // 1. Load from cache immediately
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      setRoutes(JSON.parse(cached));
+      setLoading(false);
+      return;
+    }
+
+    // 2. Else fetch from API once per reload
     const fetchRoutes = async () => {
-      const token = localStorage.getItem("userToken");
-      if (!token) return;
-
       try {
         const p = await fetch(`${base_url}/api/projects/${projectId}`, {
           headers: { token },
         });
+
         if (p.ok) {
           const pdata = await p.json();
           setProjectName(pdata.projectName);
@@ -69,19 +78,24 @@ export default function ProjectRoutes() {
 
         if (res.ok) {
           const data = await res.json();
-          setRoutes(data.routes || []);
+          const routesData = data.routes || [];
+
+          setRoutes(routesData);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(routesData)); // save cache
         }
       } catch (err) {
         console.error("Error fetching routes:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchRoutes();
   }, [projectId]);
 
-  /** --------------------------
+  /** ----------------------------------------
    * OPEN EDIT MODAL
-   ---------------------------*/
+   -----------------------------------------*/
   const openEditModal = (route) => {
     setSelectedRoute(route);
     setEditData({
@@ -91,13 +105,15 @@ export default function ProjectRoutes() {
     setEditModal(true);
   };
 
-  /** --------------------------
-   * SAVE ROUTE EDITS
-   ---------------------------*/
+  /** ----------------------------------------
+   * SAVE EDITED ROUTE
+   -----------------------------------------*/
   const saveRouteEdits = async () => {
     if (!selectedRoute) return;
 
     const token = localStorage.getItem("userToken");
+    const CACHE_KEY = `routes_${projectId}`;
+
     const body = {
       routename: editData.routename,
       method: editData.method,
@@ -114,13 +130,13 @@ export default function ProjectRoutes() {
       });
 
       if (res.ok) {
-        // refresh routes
         const updated = await fetch(
           `${base_url}/api/projects/${projectId}/routes`,
           { headers: { token } },
         ).then((r) => r.json());
 
         setRoutes(updated.routes);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(updated.routes)); // update cache
         setEditModal(false);
       }
     } catch (err) {
@@ -128,13 +144,14 @@ export default function ProjectRoutes() {
     }
   };
 
-  /** --------------------------
+  /** ----------------------------------------
    * DELETE ROUTE
-   ---------------------------*/
+   -----------------------------------------*/
   const deleteRoute = async () => {
     if (!selectedRoute) return;
 
     const token = localStorage.getItem("userToken");
+    const CACHE_KEY = `routes_${projectId}`;
 
     try {
       const res = await fetch(`${base_url}/api/routes/${selectedRoute.id}`, {
@@ -143,7 +160,9 @@ export default function ProjectRoutes() {
       });
 
       if (res.ok) {
-        setRoutes(routes.filter((r) => r.id !== selectedRoute.id));
+        const newRoutes = routes.filter((r) => r.id !== selectedRoute.id);
+        setRoutes(newRoutes);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newRoutes)); // update cache
         setDeleteModal(false);
       }
     } catch (err) {
@@ -151,18 +170,21 @@ export default function ProjectRoutes() {
     }
   };
 
-  /** --------------------------
-   * UI STARTS HERE
-   ---------------------------*/
+  /** ----------------------------------------
+   * UI
+   -----------------------------------------*/
   const navItems = [
-    { icon: Home, label: "Home", active: false, link: "/dashboard" },
+    { icon: Home, label: "Home", link: "/dashboard" },
     { icon: Database, label: "Repository", active: true, link: "/repository" },
-    { icon: User, label: "Account", active: false, link: "/account" },
-    { icon: Settings, label: "Settings", active: false, link: "/settings" },
+    { icon: User, label: "Account", link: "/account" },
+    { icon: Settings, label: "Settings", link: "/settings" },
   ];
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden">
+    <div
+      key={projectId}
+      className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden"
+    >
       {/* SIDEBAR */}
       <div
         className={`${
@@ -184,7 +206,7 @@ export default function ProjectRoutes() {
                 href={item.link}
                 className={`flex items-center gap-3 p-3 rounded-xl ${
                   item.active
-                    ? "bg-purple-500/30 text-white border border-purple-400/30"
+                    ? "bg-purple-500/30 text-white border border-purple-300/30"
                     : "text-gray-300 hover:bg-white/10"
                 }`}
               >
@@ -205,7 +227,7 @@ export default function ProjectRoutes() {
         </button>
       )}
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
@@ -220,35 +242,27 @@ export default function ProjectRoutes() {
               {projectName} — Routes
             </h1>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search routes..."
-                className="pl-12 pr-4 py-3 bg-white/10 text-white rounded-xl border border-white/20"
-              />
-            </div>
-            <button className="px-6 py-3 bg-white/10 rounded-xl hover:bg-white/20 flex items-center gap-2">
-              <Filter size={20} />
-              Filter
-            </button>
-          </div>
         </header>
 
-        {/* EMPTY */}
-        {routes.length === 0 && (
+        {/* LOADING */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <h2 className="text-2xl font-bold mb-4">Loading routes...</h2>
+            <p className="text-gray-400">
+              Please wait while we fetch your routes.
+            </p>
+          </div>
+        )}
+
+        {/* NO ROUTES */}
+        {!loading && routes.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <h2 className="text-2xl font-bold mb-4">No Routes Found</h2>
             <p className="text-gray-400 mb-6">
               Generate tests to automatically create routes.
             </p>
 
-            <Link href={`/main`}>
+            <Link href="/main">
               <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-105 shadow-lg flex items-center gap-2">
                 <PlusCircle size={22} />
                 Create Tests
@@ -257,71 +271,73 @@ export default function ProjectRoutes() {
           </div>
         )}
 
-        {/* ROUTES LIST */}
-        <div className="space-y-4">
-          {routes.map((route) => (
-            <div
-              key={route.id}
-              className="bg-white/10 border border-white/20 rounded-2xl p-6 flex justify-between items-center shadow-lg hover:shadow-purple-500/20"
-            >
-              <div>
-                <div className="flex items-center gap-4 mb-2">
-                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full">
-                    {route.method}
-                  </span>
-                  <h2 className="text-xl font-mono">{route.routename}</h2>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-8">
+        {/* ROUTES */}
+        {!loading && routes.length > 0 && (
+          <div className="space-y-4">
+            {routes.map((route) => (
+              <div
+                key={route.id}
+                className="bg-white/10 border border-white/20 rounded-2xl p-6 flex justify-between items-center shadow-lg hover:shadow-purple-500/20"
+              >
                 <div>
-                  <p className="text-gray-400 text-sm">Total Tests</p>
-                  <p className="text-2xl font-bold">{route.totalTests}</p>
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full">
+                      {route.method}
+                    </span>
+                    <h2 className="text-xl font-mono">{route.routename}</h2>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-gray-400 text-sm">Pass Rate</p>
-                  <p
-                    className={`text-2xl font-bold ${
-                      route.passPercentage > 90
-                        ? "text-green-400"
-                        : "text-yellow-400"
-                    }`}
+                <div className="flex items-center gap-8">
+                  <div>
+                    <p className="text-gray-400 text-sm">Total Tests</p>
+                    <p className="text-2xl font-bold">{route.totalTests}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400 text-sm">Pass Rate</p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        route.passPercentage > 90
+                          ? "text-green-400"
+                          : "text-yellow-400"
+                      }`}
+                    >
+                      {route.passPercentage}%
+                    </p>
+                  </div>
+
+                  <button
+                    className="px-6 py-3 bg-white/10"
+                    onClick={() => {
+                      localStorage.setItem("selectedRouteId", route.id);
+                      router.push("/tests"); // FIXED navigation
+                    }}
                   >
-                    {route.passPercentage}%
-                  </p>
+                    View Tests
+                  </button>
+
+                  <button
+                    onClick={() => openEditModal(route)}
+                    className="p-3 bg-white/10 rounded-xl hover:bg-white/20"
+                  >
+                    <Edit size={20} />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedRoute(route);
+                      setDeleteModal(true);
+                    }}
+                    className="p-3 bg-red-500/20 rounded-xl hover:bg-red-500/30 text-red-300"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
-
-                <button
-                  className="px-6 py-3 bg-white/10"
-                  onClick={() => {
-                    localStorage.setItem("selectedRouteId", route.id);
-                    window.location.href = `/tests`;
-                  }}
-                >
-                  View Tests
-                </button>
-
-                <button
-                  onClick={() => openEditModal(route)}
-                  className="p-3 bg-white/10 rounded-xl hover:bg-white/20"
-                >
-                  <Edit size={20} />
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedRoute(route);
-                    setDeleteModal(true);
-                  }}
-                  className="p-3 bg-red-500/20 rounded-xl hover:bg-red-500/30 text-red-300"
-                >
-                  <Trash2 size={20} />
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* EDIT MODAL */}
