@@ -1,5 +1,8 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Menu,
   Home,
@@ -7,173 +10,217 @@ import {
   User,
   Settings,
   X,
-  Mail,
-  FileText,
-  PlusCircle,
   Search,
   ChevronLeft,
   Filter,
   Edit,
   Trash2,
+  PlusCircle,
 } from "lucide-react";
 
-const mockRoutes = [
-  {
-    id: 1,
-    name: "/api/products",
-    method: "GET",
-    description: "Fetches a list of all products.",
-    totalTests: 25,
-    passPercentage: 92,
-  },
-  {
-    id: 2,
-    name: "/api/products/:id",
-    method: "GET",
-    description: "Fetches details of a specific product by its ID.",
-    totalTests: 15,
-    passPercentage: 100,
-  },
-  {
-    id: 3,
-    name: "/api/orders",
-    method: "POST",
-    description: "Creates a new order with the provided items.",
-    totalTests: 30,
-    passPercentage: 85,
-  },
-  {
-    id: 4,
-    name: "/api/users/register",
-    method: "POST",
-    description: "Registers a new user account.",
-    totalTests: 40,
-    passPercentage: 95,
-  },
-  {
-    id: 5,
-    name: "/api/users/login",
-    method: "POST",
-    description: "Authenticates a user and returns a token.",
-    totalTests: 18,
-    passPercentage: 89,
-  },
-];
+const base_url = "http://localhost:8000";
 
 export default function ProjectRoutes() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("project_id");
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [routes, setRoutes] = useState([]);
+  const [projectName, setProjectName] = useState("Project");
+
+  // MODALS
+  const [editModal, setEditModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+
+  // currently selected route
+  const [selectedRoute, setSelectedRoute] = useState(null);
+
+  // edit form
+  const [editData, setEditData] = useState({
+    routename: "",
+    method: "GET",
+  });
+
+  /** --------------------------
+   * FETCH ROUTES + PROJECT INFO
+   ---------------------------*/
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchRoutes = async () => {
+      const token = localStorage.getItem("userToken");
+      if (!token) return;
+
+      try {
+        const p = await fetch(`${base_url}/api/projects/${projectId}`, {
+          headers: { token },
+        });
+        if (p.ok) {
+          const pdata = await p.json();
+          setProjectName(pdata.projectName);
+        }
+
+        const res = await fetch(
+          `${base_url}/api/projects/${projectId}/routes`,
+          {
+            headers: { token },
+          },
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setRoutes(data.routes || []);
+        }
+      } catch (err) {
+        console.error("Error fetching routes:", err);
+      }
+    };
+
+    fetchRoutes();
+  }, [projectId]);
+
+  /** --------------------------
+   * OPEN EDIT MODAL
+   ---------------------------*/
+  const openEditModal = (route) => {
+    setSelectedRoute(route);
+    setEditData({
+      routename: route.routename,
+      method: route.method || "GET",
+    });
+    setEditModal(true);
+  };
+
+  /** --------------------------
+   * SAVE ROUTE EDITS
+   ---------------------------*/
+  const saveRouteEdits = async () => {
+    if (!selectedRoute) return;
+
+    const token = localStorage.getItem("userToken");
+    const body = {
+      routename: editData.routename,
+      method: editData.method,
+    };
+
+    try {
+      const res = await fetch(`${base_url}/api/routes/${selectedRoute.id}`, {
+        method: "PUT",
+        headers: {
+          token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        // refresh routes
+        const updated = await fetch(
+          `${base_url}/api/projects/${projectId}/routes`,
+          { headers: { token } },
+        ).then((r) => r.json());
+
+        setRoutes(updated.routes);
+        setEditModal(false);
+      }
+    } catch (err) {
+      console.error("Error updating route:", err);
+    }
+  };
+
+  /** --------------------------
+   * DELETE ROUTE
+   ---------------------------*/
+  const deleteRoute = async () => {
+    if (!selectedRoute) return;
+
+    const token = localStorage.getItem("userToken");
+
+    try {
+      const res = await fetch(`${base_url}/api/routes/${selectedRoute.id}`, {
+        method: "DELETE",
+        headers: { token },
+      });
+
+      if (res.ok) {
+        setRoutes(routes.filter((r) => r.id !== selectedRoute.id));
+        setDeleteModal(false);
+      }
+    } catch (err) {
+      console.error("Error deleting route:", err);
+    }
+  };
+
+  /** --------------------------
+   * UI STARTS HERE
+   ---------------------------*/
   const navItems = [
     { icon: Home, label: "Home", active: false, link: "/dashboard" },
-    {
-      icon: Database,
-      label: "Repository",
-      active: true,
-      link: "/repository",
-    },
+    { icon: Database, label: "Repository", active: true, link: "/repository" },
     { icon: User, label: "Account", active: false, link: "/account" },
     { icon: Settings, label: "Settings", active: false, link: "/settings" },
   ];
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden">
-      {/* Animated background blur circles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 right-1/3 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
-
+      {/* SIDEBAR */}
       <div
         className={`${
           sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden relative z-10`}
+        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 overflow-hidden z-10`}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
-        <div className="p-6 relative">
+        <div className="p-6">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 hover:border-white/20"
+            className="mb-8 text-gray-300 hover:text-white p-2 hover:bg-white/10 rounded-lg border border-white/10"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+
           <nav className="space-y-2">
             {navItems.map((item, index) => (
               <a
                 key={index}
                 href={item.link}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group ${
+                className={`flex items-center gap-3 p-3 rounded-xl ${
                   item.active
-                    ? "bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border border-purple-400/30 backdrop-blur-sm shadow-lg shadow-purple-500/20"
-                    : "text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm border border-transparent hover:border-white/20"
+                    ? "bg-purple-500/30 text-white border border-purple-400/30"
+                    : "text-gray-300 hover:bg-white/10"
                 }`}
               >
-                <item.icon
-                  size={20}
-                  className={`${
-                    item.active
-                      ? "text-purple-300"
-                      : "group-hover:text-purple-300 transition-colors"
-                  }`}
-                />
-                <span className="font-medium">{item.label}</span>
+                <item.icon size={20} />
+                <span>{item.label}</span>
               </a>
             ))}
           </nav>
-        </div>
-        <div className="mt-auto p-6 space-y-3 text-sm border-t border-white/10 backdrop-blur-sm relative">
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <Mail
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Contact Us</span>
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <FileText
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Policies</span>
-          </a>
         </div>
       </div>
 
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-xl border border-white/20"
+          className="fixed top-6 left-6 z-50 text-gray-300 p-2 rounded-lg border border-white/20 hover:bg-white/10"
         >
           <Menu size={24} />
         </button>
       )}
 
-      <div className="flex-1 flex flex-col p-8 overflow-y-auto">
+      {/* MAIN */}
+      <div className="flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
             <a
               href="/repository"
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-2"
+              className="flex items-center gap-2 text-gray-300 hover:text-white mb-2"
             >
               <ChevronLeft size={20} />
               Back to Repository
             </a>
             <h1 className="text-4xl font-bold tracking-wider">
-              E-commerce Platform API Routes
+              {projectName} — Routes
             </h1>
           </div>
+
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search
@@ -183,44 +230,55 @@ export default function ProjectRoutes() {
               <input
                 type="text"
                 placeholder="Search routes..."
-                className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all duration-300"
+                className="pl-12 pr-4 py-3 bg-white/10 text-white rounded-xl border border-white/20"
               />
             </div>
-            <button className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300">
+            <button className="px-6 py-3 bg-white/10 rounded-xl hover:bg-white/20 flex items-center gap-2">
               <Filter size={20} />
-              <span>Filter</span>
+              Filter
             </button>
           </div>
         </header>
 
+        {/* EMPTY */}
+        {routes.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <h2 className="text-2xl font-bold mb-4">No Routes Found</h2>
+            <p className="text-gray-400 mb-6">
+              Generate tests to automatically create routes.
+            </p>
+
+            <Link href={`/main`}>
+              <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-105 shadow-lg flex items-center gap-2">
+                <PlusCircle size={22} />
+                Create Tests
+              </button>
+            </Link>
+          </div>
+        )}
+
+        {/* ROUTES LIST */}
         <div className="space-y-4">
-          {mockRoutes.map((route) => (
+          {routes.map((route) => (
             <div
               key={route.id}
-              className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex items-center justify-between"
+              className="bg-white/10 border border-white/20 rounded-2xl p-6 flex justify-between items-center shadow-lg hover:shadow-purple-500/20"
             >
-              <div className="flex-1">
+              <div>
                 <div className="flex items-center gap-4 mb-2">
-                  <span
-                    className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                      route.method === "GET"
-                        ? "bg-blue-500/20 text-blue-300"
-                        : "bg-green-500/20 text-green-300"
-                    }`}
-                  >
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full">
                     {route.method}
                   </span>
-                  <h2 className="text-xl font-semibold font-mono">
-                    {route.name}
-                  </h2>
+                  <h2 className="text-xl font-mono">{route.routename}</h2>
                 </div>
-                <p className="text-gray-300 text-sm">{route.description}</p>
               </div>
+
               <div className="flex items-center gap-8">
                 <div>
                   <p className="text-gray-400 text-sm">Total Tests</p>
                   <p className="text-2xl font-bold">{route.totalTests}</p>
                 </div>
+
                 <div>
                   <p className="text-gray-400 text-sm">Pass Rate</p>
                   <p
@@ -233,16 +291,31 @@ export default function ProjectRoutes() {
                     {route.passPercentage}%
                   </p>
                 </div>
-                <a
-                  href="/tests"
-                  className="px-6 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors"
+
+                <button
+                  className="px-6 py-3 bg-white/10"
+                  onClick={() => {
+                    localStorage.setItem("selectedRouteId", route.id);
+                    window.location.href = `/tests`;
+                  }}
                 >
                   View Tests
-                </a>
-                <button className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                </button>
+
+                <button
+                  onClick={() => openEditModal(route)}
+                  className="p-3 bg-white/10 rounded-xl hover:bg-white/20"
+                >
                   <Edit size={20} />
                 </button>
-                <button className="p-3 bg-red-500/20 text-red-300 rounded-xl hover:bg-red-500/30 transition-colors">
+
+                <button
+                  onClick={() => {
+                    setSelectedRoute(route);
+                    setDeleteModal(true);
+                  }}
+                  className="p-3 bg-red-500/20 rounded-xl hover:bg-red-500/30 text-red-300"
+                >
                   <Trash2 size={20} />
                 </button>
               </div>
@@ -250,6 +323,83 @@ export default function ProjectRoutes() {
           ))}
         </div>
       </div>
+
+      {/* EDIT MODAL */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex justify-center items-center z-50">
+          <div className="bg-slate-900 border border-white/10 p-6 rounded-xl w-96">
+            <h2 className="text-xl font-bold mb-4">Edit Route</h2>
+
+            <input
+              className="w-full p-2 mb-3 bg-white/10 rounded-lg border border-white/20"
+              placeholder="Route Name"
+              value={editData.routename}
+              onChange={(e) =>
+                setEditData({ ...editData, routename: e.target.value })
+              }
+            />
+
+            <select
+              className="w-full p-2 mb-6 bg-white/10 rounded-lg border border-white/20"
+              value={editData.method}
+              onChange={(e) =>
+                setEditData({ ...editData, method: e.target.value })
+              }
+            >
+              {["GET", "POST", "PUT", "DELETE", "PATCH"].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                onClick={() => setEditModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="px-4 py-2 bg-purple-500 rounded hover:bg-purple-600"
+                onClick={saveRouteEdits}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex justify-center items-center z-50">
+          <div className="bg-slate-900 border border-white/10 p-6 rounded-xl w-80">
+            <h2 className="text-xl font-bold mb-4">Delete Route?</h2>
+
+            <p className="text-gray-300 mb-4">
+              This will permanently delete this route and all its tests.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                onClick={() => setDeleteModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="px-4 py-2 bg-red-500 rounded hover:bg-red-600"
+                onClick={deleteRoute}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

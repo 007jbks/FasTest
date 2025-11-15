@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Menu,
   Home,
@@ -10,228 +12,242 @@ import {
   Mail,
   FileText,
   PlusCircle,
-  Search,
   Edit,
   Trash2,
 } from "lucide-react";
 
-const mockProjects = [
-  {
-    id: 1,
-    name: "E-commerce Platform API",
-    description:
-      "A robust API for managing products, orders, and customer data for an online retail application.",
-    lastUpdated: "2 days ago",
-    totalTests: 128,
-    passPercentage: 93,
-  },
-  {
-    id: 2,
-    name: "Social Media Analytics Dashboard",
-    description:
-      "Backend services for a dashboard that tracks and visualizes social media engagement metrics.",
-    lastUpdated: "5 days ago",
-    totalTests: 256,
-    passPercentage: 88,
-  },
-  {
-    id: 3,
-    name: "Inventory Management System",
-    description:
-      "A system for tracking stock levels, managing suppliers, and automating purchase orders.",
-    lastUpdated: "1 week ago",
-    totalTests: 95,
-    passPercentage: 99,
-  },
-  {
-    id: 4,
-    name: "Healthcare Patient Portal",
-    description:
-      "A secure portal for patients to access their medical records, book appointments, and communicate with doctors.",
-    lastUpdated: "2 weeks ago",
-    totalTests: 312,
-    passPercentage: 91,
-  },
-  {
-    id: 5,
-    name: "Travel Booking API",
-    description:
-      "An API that provides flight, hotel, and car rental booking functionalities for a travel agency.",
-    lastUpdated: "1 month ago",
-    totalTests: 180,
-    passPercentage: 96,
-  },
-];
+const base_url = "http://localhost:8000";
 
 export default function Repository() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // All projects
+  const [projects, setProjects] = useState([]);
+
+  // Modal states
+  const [editModal, setEditModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  const [editData, setEditData] = useState({
+    name: "",
+    description: "",
+    projectUrl: "",
+  });
+
+  // Fetch projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const token = localStorage.getItem("userToken");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${base_url}/api/projects-with-stats`, {
+          headers: { token },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data.projects);
+        }
+      } catch (err) {
+        console.error("Error loading projects:", err);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  // Open edit modal
+  const openEditModal = (project) => {
+    setSelectedProject(project);
+
+    // Map backend keys → modal fields
+    setEditData({
+      name: project.name || "",
+      description: project.description || "",
+      projectUrl: project.projectUrl || "",
+    });
+
+    setEditModal(true);
+  };
+
+  // Save project edits
+  const saveEdits = async () => {
+    if (!selectedProject) return;
+
+    const token = localStorage.getItem("userToken");
+
+    const body = {
+      projectName: editData.name,
+      businessLogic: editData.description,
+      projectUrl: editData.projectUrl,
+    };
+
+    try {
+      const res = await fetch(
+        `${base_url}/api/projects/${selectedProject.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            token,
+          },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (res.ok) {
+        // Refresh list
+        const updatedList = await fetch(`${base_url}/api/projects-with-stats`, {
+          headers: { token },
+        }).then((r) => r.json());
+
+        setProjects(updatedList.projects);
+        setEditModal(false);
+      }
+    } catch (err) {
+      console.error("Error updating project:", err);
+    }
+  };
+
+  // Delete project
+  const deleteProject = async () => {
+    if (!selectedProject) return;
+
+    const token = localStorage.getItem("userToken");
+
+    try {
+      const res = await fetch(
+        `${base_url}/api/projects/${selectedProject.id}`,
+        {
+          method: "DELETE",
+          headers: { token },
+        },
+      );
+
+      if (res.ok) {
+        setProjects(projects.filter((p) => p.id !== selectedProject.id));
+        setDeleteModal(false);
+      }
+    } catch (err) {
+      console.error("Error deleting project:", err);
+    }
+  };
+
   const navItems = [
     { icon: Home, label: "Home", active: false, link: "./dashboard" },
-    {
-      icon: Database,
-      label: "Repository",
-      active: true,
-      link: "./repository",
-    },
+    { icon: Database, label: "Repository", active: true, link: "./repository" },
     { icon: User, label: "Account", active: false, link: "./account" },
     { icon: Settings, label: "Settings", active: false, link: "./settings" },
   ];
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden">
-      {/* Animated background blur circles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 right-1/3 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
-
+    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white">
+      {/* ===== SIDEBAR ===== */}
       <div
         className={`${
           sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden relative z-10`}
+        } backdrop-blur-xl bg-white/5 border-r border-white/10 transition-all duration-300 overflow-hidden z-10`}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
-        <div className="p-6 relative">
+        <div className="p-6">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 hover:border-white/20"
+            className="mb-8 text-gray-300 hover:text-white p-2 hover:bg-white/10 rounded-lg border border-white/10"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+
           <nav className="space-y-2">
             {navItems.map((item, index) => (
               <a
                 key={index}
                 href={item.link}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group ${
+                className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
                   item.active
-                    ? "bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border border-purple-400/30 backdrop-blur-sm shadow-lg shadow-purple-500/20"
-                    : "text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm border border-transparent hover:border-white/20"
+                    ? "bg-purple-500/30 text-white border border-purple-400/30"
+                    : "text-gray-300 hover:bg-white/10"
                 }`}
               >
-                <item.icon
-                  size={20}
-                  className={`${
-                    item.active
-                      ? "text-purple-300"
-                      : "group-hover:text-purple-300 transition-colors"
-                  }`}
-                />
-                <span className="font-medium">{item.label}</span>
+                <item.icon size={20} />
+                <span>{item.label}</span>
               </a>
             ))}
           </nav>
         </div>
-        <div className="mt-auto p-6 space-y-3 text-sm border-t border-white/10 backdrop-blur-sm relative">
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <Mail
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Contact Us</span>
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group"
-          >
-            <FileText
-              size={16}
-              className="group-hover:text-purple-300 transition-colors"
-            />
-            <span>Policies</span>
-          </a>
-        </div>
       </div>
 
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-xl border border-white/20"
-        >
-          <Menu size={24} />
-        </button>
-      )}
-
-      <div className="flex-1 flex flex-col p-8 overflow-y-auto">
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold tracking-wider">
-            Project Repository
-          </h1>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search projects..."
-                className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl placeholder-gray-400 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all duration-300"
-              />
-            </div>
-            <a
-              href="/Project"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105"
-            >
+          <h1 className="text-3xl font-bold">Project Repository</h1>
+
+          <Link href="/Project">
+            <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:scale-105 shadow-lg">
               <PlusCircle size={20} />
               <span>Create New Project</span>
-            </a>
-          </div>
+            </button>
+          </Link>
         </header>
 
+        {/* ===== PROJECT CARDS ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mockProjects.map((project) => (
+          {projects.length === 0 && (
+            <p className="text-gray-300 text-lg">No projects found.</p>
+          )}
+
+          {projects.map((p) => (
             <div
-              key={project.id}
-              className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex flex-col justify-between"
+              key={p.id}
+              className="bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl transition-all hover:shadow-purple-500/30"
             >
-              <div>
-                <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-                <p className="text-gray-300 text-sm mb-4">
-                  {project.description}
-                </p>
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <div className="flex gap-4">
-                  <div>
-                    <p className="text-xs text-gray-400">Total Tests</p>
-                    <p className="font-bold">{project.totalTests}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Pass Rate</p>
-                    <p
-                      className={`font-bold ${
-                        project.passPercentage > 90
-                          ? "text-green-400"
-                          : "text-yellow-400"
-                      }`}
-                    >
-                      {project.passPercentage}%
-                    </p>
-                  </div>
+              <h2 className="text-xl font-semibold mb-2">{p.name}</h2>
+              <p className="text-gray-300 text-sm mb-4">{p.description}</p>
+
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-xs text-gray-400">Total Tests</p>
+                  <p className="font-bold">{p.totalTests}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href="/routes"
-                    className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/20 transition-colors"
+
+                <div>
+                  <p className="text-xs text-gray-400">Pass Rate</p>
+                  <p
+                    className={`font-bold ${
+                      p.passPercentage > 90
+                        ? "text-green-400"
+                        : "text-yellow-400"
+                    }`}
+                  >
+                    {p.passPercentage}%
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20"
+                    onClick={() => {
+                      localStorage.setItem("selectedProjectId", String(p.id));
+                      window.location.href = `/routes?project_id=${p.id}`;
+                    }}
                   >
                     View
-                  </a>
-                  <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                  </button>
+
+                  <button
+                    className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+                    onClick={() => openEditModal(p)}
+                  >
                     <Edit size={16} />
                   </button>
-                  <button className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors">
+
+                  <button
+                    className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30"
+                    onClick={() => {
+                      setSelectedProject(p);
+                      setDeleteModal(true);
+                    }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -240,6 +256,86 @@ export default function Repository() {
           ))}
         </div>
       </div>
+
+      {/* ===== EDIT MODAL ===== */}
+      {editModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-slate-900 p-6 rounded-xl border border-white/10 w-96">
+            <h2 className="text-xl font-bold mb-4">Edit Project</h2>
+
+            <input
+              className="w-full p-2 mb-3 rounded bg-white/10 border border-white/20"
+              placeholder="Project Name"
+              value={editData.name}
+              onChange={(e) =>
+                setEditData({ ...editData, name: e.target.value })
+              }
+            />
+
+            <textarea
+              className="w-full p-2 mb-3 rounded bg-white/10 border border-white/20"
+              placeholder="Business Logic"
+              value={editData.description}
+              onChange={(e) =>
+                setEditData({ ...editData, description: e.target.value })
+              }
+            />
+
+            <input
+              className="w-full p-2 mb-3 rounded bg-white/10 border border-white/20"
+              placeholder="Project URL"
+              value={editData.projectUrl}
+              onChange={(e) =>
+                setEditData({ ...editData, projectUrl: e.target.value })
+              }
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                onClick={() => setEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-purple-500 rounded hover:bg-purple-600"
+                onClick={saveEdits}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== DELETE MODAL ===== */}
+      {deleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-slate-900 p-6 rounded-xl border border-white/10 w-80">
+            <h2 className="text-xl font-bold mb-4">Delete Project?</h2>
+
+            <p className="text-gray-300 mb-4">
+              This will permanently delete the project and all its tests.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                onClick={() => setDeleteModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="px-4 py-2 bg-red-500 rounded hover:bg-red-600"
+                onClick={deleteProject}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -58,15 +58,60 @@ export default function CreateProject() {
 
   const handleTestConnection = async () => {
     console.log("Testing connection for:", formData.projectUrl);
-    // Implement connection testing logic here
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${base_url}/api/test-connection`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url: formData.projectUrl }),
+      });
+
+      if (response.ok) {
+        alert("Connection successful!");
+      } else {
+        const errorData = await response.json();
+        alert(`Connection failed: ${response.status} - ${errorData.detail}`);
+      }
+    } catch (error) {
+      alert(`Connection failed: ${error}`);
+    }
   };
 
   const handleCreateProject = async () => {
     if (!isFormValid) return;
     setIsLoading(true);
     console.log("Creating project with:", formData);
-    // Implement project creation logic here
-    setIsLoading(false);
+
+    try {
+      const token = localStorage.getItem("userToken");
+      const response = await fetch(`${base_url}/api/projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const project = await response.json();
+        console.log("Project created:", project);
+        alert("Project created successfully!");
+        // Redirect to the project page or dashboard
+        router.push("/dashboard");
+      } else {
+        alert(
+          `Project creation failed: ${response.status} ${response.statusText}`,
+        );
+      }
+    } catch (error) {
+      alert(`Project creation failed: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
