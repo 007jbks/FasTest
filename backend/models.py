@@ -6,64 +6,91 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
+# ================================
+# USER
+# ================================
 class User(Base):
     __tablename__ = "users"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column()
 
-    projects: Mapped[List["Project"]] = relationship(back_populates="user")
+    projects: Mapped[List["Project"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
+# ================================
+# PROJECT
+# ================================
 class Project(Base):
     __tablename__ = "projects"
+
     project_id: Mapped[int] = mapped_column(primary_key=True)
     projectName: Mapped[str] = mapped_column()
     businessLogic: Mapped[str] = mapped_column()
     projectUrl: Mapped[str] = mapped_column()
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     user: Mapped["User"] = relationship(back_populates="projects")
-    tests: Mapped[List["Test"]] = relationship(back_populates="project")
-    routes: Mapped[List["Route"]] = relationship(back_populates="project")
+
+    tests: Mapped[List["Test"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+    routes: Mapped[List["Route"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
-from typing import List
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-
+# ================================
+# ROUTE
+# ================================
 class Route(Base):
     __tablename__ = "routes"
 
     route_id: Mapped[int] = mapped_column(primary_key=True)
     routename: Mapped[str] = mapped_column()
-
-    # NEW — HTTP Method of the route
     method: Mapped[str] = mapped_column(default="GET")
 
-    # Link route → project
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.project_id"))
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False
+    )
+
     project: Mapped["Project"] = relationship(back_populates="routes")
 
-    # Reverse relation for tests
-    tests: Mapped[List["Test"]] = relationship(back_populates="route")
+    tests: Mapped[List["Test"]] = relationship(
+        back_populates="route", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
+# ================================
+# TEST
+# ================================
 class Test(Base):
     __tablename__ = "tests"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     body: Mapped[str] = mapped_column()
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.project_id"))
-    route_id: Mapped[int] = mapped_column(ForeignKey("routes.route_id"))
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False
+    )
+
+    route_id: Mapped[int] = mapped_column(
+        ForeignKey("routes.route_id", ondelete="CASCADE"), nullable=False
+    )
 
     project: Mapped["Project"] = relationship(back_populates="tests")
-
-    # NEW
     route: Mapped["Route"] = relationship(back_populates="tests")
 
     created_at: Mapped[datetime] = mapped_column(default=func.now())
@@ -71,20 +98,37 @@ class Test(Base):
         default=func.now(), onupdate=func.now()
     )
 
+    results: Mapped[List["TestResult"]] = relationship(
+        back_populates="test", cascade="all, delete-orphan", passive_deletes=True
+    )
 
-# Legacy table (optional)
+
+# ================================
+# LEGACY URL TABLE
+# ================================
 class Url(Base):
     __tablename__ = "url"
+
     url_id: Mapped[int] = mapped_column(primary_key=True)
     urlname: Mapped[str] = mapped_column()
 
 
+# ================================
+# TEST RESULT
+# ================================
 class TestResult(Base):
     __tablename__ = "test_results"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"))
+
+    test_id: Mapped[int] = mapped_column(
+        ForeignKey("tests.id", ondelete="CASCADE"), nullable=False
+    )
+
+    test: Mapped["Test"] = relationship(back_populates="results")
+
     passed: Mapped[bool] = mapped_column()
     actual_status: Mapped[int] = mapped_column(nullable=True)
     actual_body: Mapped[str] = mapped_column(nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(default=func.now())

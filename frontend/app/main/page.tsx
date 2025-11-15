@@ -15,9 +15,36 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function APITestGenerator() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("userToken");
+
+      // No token → redirect
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Decode payload
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Expired token → redirect
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem("userToken");
+        router.push("/login");
+        return;
+      }
+    } catch {
+      // Malformed token → redirect
+      localStorage.removeItem("userToken");
+      router.push("/login");
+    }
+  }, []);
+
+  const [isLoading, setIsLoading] = useState(false);
+
   const searchParams = useSearchParams();
   const projectId = searchParams.get("project_id");
 
@@ -49,8 +76,7 @@ export default function APITestGenerator() {
       active: false,
       link: "./repository",
     },
-    { icon: User, label: "Account", active: false, link: "./dashboard" },
-    { icon: Settings, label: "Settings", active: false, link: "./dashboard" },
+    { icon: User, label: "Account", active: false, link: "./account" },
   ];
 
   const handleInputChange = (e) => {
@@ -120,20 +146,9 @@ export default function APITestGenerator() {
       </div>
 
       {/* Sidebar */}
-      <div
-        className={`${
-          sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 transition-all overflow-hidden relative z-10`}
-      >
+      <div className="w-60 backdrop-blur-xl bg-white/5 border-r border-white/10 transition-all relative z-10">
         <div className="p-6 relative">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white p-2 hover:bg-white/10 rounded-lg border border-white/10"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-8">
             {navItems.map((item, index) => (
               <a
                 key={index}

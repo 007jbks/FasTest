@@ -19,19 +19,43 @@ import {
 const base_url = "http://localhost:8000";
 
 export default function ProjectRoutes() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("userToken");
+
+      // No token → redirect
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Decode payload
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Expired token → redirect
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem("userToken");
+        router.push("/login");
+        return;
+      }
+    } catch {
+      // Malformed token → redirect
+      localStorage.removeItem("userToken");
+      router.push("/login");
+    }
+  }, []);
+
+  const searchParams = useSearchParams();
+
   const projectId = searchParams.get("project_id");
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [routes, setRoutes] = useState([]);
   const [projectName, setProjectName] = useState("Project");
   const [loading, setLoading] = useState(true);
 
-  // MODALS
   const [editModal, setEditModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
-
   const [selectedRoute, setSelectedRoute] = useState(null);
 
   const [editData, setEditData] = useState({
@@ -39,27 +63,22 @@ export default function ProjectRoutes() {
     method: "GET",
   });
 
-  /** ----------------------------------------
-   * FETCH ROUTES (WITH FIXED CACHING)
-   -----------------------------------------*/
-  useEffect(() => {
-    if (!projectId) return; // wait until projectId exists
+  const [runningAll, setRunningAll] = useState({});
 
-    const CACHE_KEY = `routes_${projectId}`;
+  /** ========================================================================
+   * FETCH ROUTES + FETCH ROUTE PASS STATS
+   * ===================================================================== */
+  useEffect(() => {
+    if (!projectId) return;
+
     const token = localStorage.getItem("userToken");
     if (!token) return;
 
-    // 1. Load from cache immediately
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      setRoutes(JSON.parse(cached));
-      setLoading(false);
-      return;
-    }
-
-    // 2. Else fetch from API once per reload
     const fetchRoutes = async () => {
+      setLoading(true);
+
       try {
+        // Fetch project name
         const p = await fetch(`${base_url}/api/projects/${projectId}`, {
           headers: { token },
         });
@@ -69,33 +88,93 @@ export default function ProjectRoutes() {
           setProjectName(pdata.projectName);
         }
 
+        // Fetch raw routes
         const res = await fetch(
           `${base_url}/api/projects/${projectId}/routes`,
-          {
-            headers: { token },
-          },
+          { headers: { token } },
         );
 
+        let routesList = [];
         if (res.ok) {
           const data = await res.json();
-          const routesData = data.routes || [];
-
-          setRoutes(routesData);
-          localStorage.setItem(CACHE_KEY, JSON.stringify(routesData)); // save cache
+          routesList = data.routes || [];
         }
+
+        // Fetch pass stats
+        const stats = await fetch(
+          `${base_url}/api/routes-passed-stats/${projectId}`,
+          { headers: { token } },
+        ).then((r) => r.json());
+
+        // map stats by route_id
+        const statsMap = {};
+        stats.routes.forEach((r) => {
+          statsMap[r.route_id] = r;
+        });
+
+        // merge stats into routes
+        const enhanced = routesList.map((r) => ({
+          ...r,
+          passPercentage: Number((statsMap[r.id]?.percentage || 0).toFixed(2)),
+          totalTests: statsMap[r.id]?.total_tests || 0,
+        }));
+
+        setRoutes(enhanced);
       } catch (err) {
         console.error("Error fetching routes:", err);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     fetchRoutes();
   }, [projectId]);
 
-  /** ----------------------------------------
-   * OPEN EDIT MODAL
-   -----------------------------------------*/
+  /** ========================================================================
+   * RUN ALL TESTS → THEN RELOAD PASS STATS
+   * ===================================================================== */
+  async function runAllTests(routeId) {
+    const token = localStorage.getItem("userToken");
+    if (!token) return;
+
+    setRunningAll((prev) => ({ ...prev, [routeId]: true }));
+
+    try {
+      // Run tests
+      await fetch(`${base_url}/api/run-tests/${projectId}/${routeId}`, {
+        method: "POST",
+        headers: { token },
+      });
+
+      // Fetch updated stats
+      const stats = await fetch(
+        `${base_url}/api/routes-passed-stats/${projectId}`,
+        { headers: { token } },
+      ).then((r) => r.json());
+
+      const statsMap = {};
+      stats.routes.forEach((r) => {
+        statsMap[r.route_id] = r;
+      });
+
+      // Update UI with new pass % and test count
+      setRoutes((prev) =>
+        prev.map((r) => ({
+          ...r,
+          passPercentage: Number((statsMap[r.id]?.percentage || 0).toFixed(2)),
+          totalTests: statsMap[r.id]?.total_tests || r.totalTests,
+        })),
+      );
+    } catch (err) {
+      console.error("Run all tests error:", err);
+    }
+
+    setRunningAll((prev) => ({ ...prev, [routeId]: false }));
+  }
+
+  /** ========================================================================
+   * EDIT ROUTE
+   * ===================================================================== */
   const openEditModal = (route) => {
     setSelectedRoute(route);
     setEditData({
@@ -105,14 +184,10 @@ export default function ProjectRoutes() {
     setEditModal(true);
   };
 
-  /** ----------------------------------------
-   * SAVE EDITED ROUTE
-   -----------------------------------------*/
   const saveRouteEdits = async () => {
     if (!selectedRoute) return;
 
     const token = localStorage.getItem("userToken");
-    const CACHE_KEY = `routes_${projectId}`;
 
     const body = {
       routename: editData.routename,
@@ -130,13 +205,13 @@ export default function ProjectRoutes() {
       });
 
       if (res.ok) {
+        // Reload routes fully
         const updated = await fetch(
           `${base_url}/api/projects/${projectId}/routes`,
           { headers: { token } },
         ).then((r) => r.json());
 
-        setRoutes(updated.routes);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(updated.routes)); // update cache
+        setRoutes(updated.routes || []);
         setEditModal(false);
       }
     } catch (err) {
@@ -144,14 +219,13 @@ export default function ProjectRoutes() {
     }
   };
 
-  /** ----------------------------------------
+  /** ========================================================================
    * DELETE ROUTE
-   -----------------------------------------*/
+   * ===================================================================== */
   const deleteRoute = async () => {
     if (!selectedRoute) return;
 
     const token = localStorage.getItem("userToken");
-    const CACHE_KEY = `routes_${projectId}`;
 
     try {
       const res = await fetch(`${base_url}/api/routes/${selectedRoute.id}`, {
@@ -160,9 +234,7 @@ export default function ProjectRoutes() {
       });
 
       if (res.ok) {
-        const newRoutes = routes.filter((r) => r.id !== selectedRoute.id);
-        setRoutes(newRoutes);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(newRoutes)); // update cache
+        setRoutes(routes.filter((r) => r.id !== selectedRoute.id));
         setDeleteModal(false);
       }
     } catch (err) {
@@ -170,43 +242,34 @@ export default function ProjectRoutes() {
     }
   };
 
-  /** ----------------------------------------
-   * UI
-   -----------------------------------------*/
+  /** ========================================================================
+   * NAV BAR ITEMS
+   * ===================================================================== */
   const navItems = [
     { icon: Home, label: "Home", link: "/dashboard" },
     { icon: Database, label: "Repository", active: true, link: "/repository" },
     { icon: User, label: "Account", link: "/account" },
-    { icon: Settings, label: "Settings", link: "/settings" },
   ];
 
+  /** ========================================================================
+   * UI RENDER
+   * ===================================================================== */
   return (
     <div
       key={projectId}
       className="flex h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white overflow-hidden"
     >
       {/* SIDEBAR */}
-      <div
-        className={`${
-          sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 overflow-hidden z-10`}
-      >
+      <div className="w-60 backdrop-blur-xl bg-white/5 border-r border-white/10 transition-all duration-300">
         <div className="p-6">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white p-2 hover:bg-white/10 rounded-lg border border-white/10"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-8">
             {navItems.map((item, index) => (
               <a
                 key={index}
                 href={item.link}
                 className={`flex items-center gap-3 p-3 rounded-xl ${
                   item.active
-                    ? "bg-purple-500/30 text-white border border-purple-300/30"
+                    ? "bg-purple-500/30 border border-purple-300/30"
                     : "text-gray-300 hover:bg-white/10"
                 }`}
               >
@@ -217,15 +280,6 @@ export default function ProjectRoutes() {
           </nav>
         </div>
       </div>
-
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-300 p-2 rounded-lg border border-white/20 hover:bg-white/10"
-        >
-          <Menu size={24} />
-        </button>
-      )}
 
       {/* MAIN CONTENT */}
       <div className="flex-1 p-8 overflow-y-auto">
@@ -238,54 +292,39 @@ export default function ProjectRoutes() {
               <ChevronLeft size={20} />
               Back to Repository
             </a>
-            <h1 className="text-4xl font-bold tracking-wider">
-              {projectName} — Routes
-            </h1>
+            <h1 className="text-4xl font-bold">{projectName} — Routes</h1>
           </div>
         </header>
 
         {/* LOADING */}
         {loading && (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <h2 className="text-2xl font-bold mb-4">Loading routes...</h2>
-            <p className="text-gray-400">
-              Please wait while we fetch your routes.
-            </p>
+          <div className="flex items-center justify-center h-64">
+            <h2 className="text-2xl">Loading routes...</h2>
           </div>
         )}
 
         {/* NO ROUTES */}
         {!loading && routes.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <h2 className="text-2xl font-bold mb-4">No Routes Found</h2>
-            <p className="text-gray-400 mb-6">
-              Generate tests to automatically create routes.
-            </p>
-
+          <div className="flex flex-col items-center h-64">
+            <h2 className="text-2xl mb-4">No Routes Found</h2>
             <Link href="/main">
-              <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-105 shadow-lg flex items-center gap-2">
-                <PlusCircle size={22} />
-                Create Tests
+              <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                <PlusCircle size={22} /> Create Tests
               </button>
             </Link>
           </div>
         )}
 
-        {/* ROUTES */}
+        {/* ROUTE LIST */}
         {!loading && routes.length > 0 && (
           <div className="space-y-4">
             {routes.map((route) => (
               <div
                 key={route.id}
-                className="bg-white/10 border border-white/20 rounded-2xl p-6 flex justify-between items-center shadow-lg hover:shadow-purple-500/20"
+                className="bg-white/10 border border-white/20 rounded-xl p-6 flex justify-between items-center"
               >
                 <div>
-                  <div className="flex items-center gap-4 mb-2">
-                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full">
-                      {route.method}
-                    </span>
-                    <h2 className="text-xl font-mono">{route.routename}</h2>
-                  </div>
+                  <h2 className="text-xl font-mono">{route.routename}</h2>
                 </div>
 
                 <div className="flex items-center gap-8">
@@ -303,7 +342,7 @@ export default function ProjectRoutes() {
                           : "text-yellow-400"
                       }`}
                     >
-                      {route.passPercentage}%
+                      {Number(route.passPercentage).toFixed(2)}%
                     </p>
                   </div>
 
@@ -311,15 +350,23 @@ export default function ProjectRoutes() {
                     className="px-6 py-3 bg-white/10"
                     onClick={() => {
                       localStorage.setItem("selectedRouteId", route.id);
-                      router.push("/tests"); // FIXED navigation
+                      router.push("/tests");
                     }}
                   >
                     View Tests
                   </button>
 
                   <button
+                    className="px-6 py-3 bg-purple-600 rounded-lg"
+                    onClick={() => runAllTests(route.id)}
+                    disabled={runningAll[route.id]}
+                  >
+                    {runningAll[route.id] ? "Running..." : "Run All"}
+                  </button>
+
+                  <button
                     onClick={() => openEditModal(route)}
-                    className="p-3 bg-white/10 rounded-xl hover:bg-white/20"
+                    className="p-3 bg-white/10 rounded-lg"
                   >
                     <Edit size={20} />
                   </button>
@@ -329,7 +376,7 @@ export default function ProjectRoutes() {
                       setSelectedRoute(route);
                       setDeleteModal(true);
                     }}
-                    className="p-3 bg-red-500/20 rounded-xl hover:bg-red-500/30 text-red-300"
+                    className="p-3 bg-red-500/20 rounded-lg text-red-300"
                   >
                     <Trash2 size={20} />
                   </button>
@@ -342,13 +389,12 @@ export default function ProjectRoutes() {
 
       {/* EDIT MODAL */}
       {editModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-900 border border-white/10 p-6 rounded-xl w-96">
             <h2 className="text-xl font-bold mb-4">Edit Route</h2>
 
             <input
-              className="w-full p-2 mb-3 bg-white/10 rounded-lg border border-white/20"
-              placeholder="Route Name"
+              className="w-full p-2 mb-3 bg-white/10 border border-white/20"
               value={editData.routename}
               onChange={(e) =>
                 setEditData({ ...editData, routename: e.target.value })
@@ -356,7 +402,7 @@ export default function ProjectRoutes() {
             />
 
             <select
-              className="w-full p-2 mb-6 bg-white/10 rounded-lg border border-white/20"
+              className="w-full p-2 mb-6 bg-white/10 border border-white/20"
               value={editData.method}
               onChange={(e) =>
                 setEditData({ ...editData, method: e.target.value })
@@ -371,14 +417,13 @@ export default function ProjectRoutes() {
 
             <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                className="px-4 py-2 bg-white/10 rounded"
                 onClick={() => setEditModal(false)}
               >
                 Cancel
               </button>
-
               <button
-                className="px-4 py-2 bg-purple-500 rounded hover:bg-purple-600"
+                className="px-4 py-2 bg-purple-500 rounded"
                 onClick={saveRouteEdits}
               >
                 Save
@@ -390,24 +435,23 @@ export default function ProjectRoutes() {
 
       {/* DELETE MODAL */}
       {deleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-900 border border-white/10 p-6 rounded-xl w-80">
             <h2 className="text-xl font-bold mb-4">Delete Route?</h2>
-
             <p className="text-gray-300 mb-4">
-              This will permanently delete this route and all its tests.
+              This will permanently delete this route and its tests.
             </p>
 
             <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 bg-white/10 rounded hover:bg-white/20"
+                className="px-4 py-2 bg-white/10 rounded"
                 onClick={() => setDeleteModal(false)}
               >
                 Cancel
               </button>
 
               <button
-                className="px-4 py-2 bg-red-500 rounded hover:bg-red-600"
+                className="px-4 py-2 bg-red-500 rounded"
                 onClick={deleteRoute}
               >
                 Delete

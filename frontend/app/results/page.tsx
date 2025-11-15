@@ -1,7 +1,7 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Search, Edit3, Save, Home } from "lucide-react";
+import { Search, Home } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -35,19 +35,45 @@ async function updateTest(testId, data) {
     body: JSON.stringify({ test: data }),
   });
 
-  if (!res.ok) throw new Error("Failed to update test");
+  if (!res.ok) throw new Error("Failed to update");
   return res.json();
 }
 
-/* ---------------- MAIN COMPONENT ---------------- */
+/* ---------------- MAIN PAGE ---------------- */
 export default function GeneratedTestsPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("userToken");
+
+      // No token → redirect
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Decode payload
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Expired token → redirect
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem("userToken");
+        router.push("/login");
+        return;
+      }
+    } catch {
+      // Malformed token → redirect
+      localStorage.removeItem("userToken");
+      router.push("/login");
+    }
+  }, []);
   const [tests, setTests] = useState([]);
   const [editing, setEditing] = useState({ id: null, content: "" });
 
   const [savingOne, setSavingOne] = useState(null);
+  const [savedOne, setSavedOne] = useState({});
   const [savingAll, setSavingAll] = useState(false);
-
-  const [savedOne, setSavedOne] = useState(null);
   const [savedAll, setSavedAll] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -59,7 +85,7 @@ export default function GeneratedTestsPage() {
     if (saved) setProjectId(Number(saved));
   }, []);
 
-  /* ------------ LOAD TESTS FROM LOCAL STORAGE ------------ */
+  /* ------------ LOAD TESTS FROM LS ------------ */
   useEffect(() => {
     const raw = localStorage.getItem("tests");
     if (!raw) return;
@@ -84,33 +110,42 @@ export default function GeneratedTestsPage() {
           body: b.expected_response_body,
         },
         original: item,
-        dbId: item.test_id || null,
+        dbId: item.test_id || null, // very important
       };
     });
 
     setTests(formatted);
   }, []);
 
-  /* ------------ FIXED normalize() ------------ */
+  /* ------------ NORMALIZE ------------ */
   function normalize(test) {
     return {
-      route: test.route || test.original.route || "default",
-      method: test.method || test.testCase.method || "GET",
+      route: test.route,
+      method: test.method,
       body: test.original.body,
     };
   }
 
-  /* ------------ SAVE ONE ------------ */
+  /* ------------ SAVE ONE TEST ------------ */
   async function handleSave(test) {
     if (!projectId) return alert("Project ID missing");
+
+    // If already saved disable
+    if (savedOne[test.id]) return;
 
     setSavingOne(test.id);
 
     try {
-      await saveTests([normalize(test)], projectId);
+      const res = await saveTests([normalize(test)], projectId);
 
-      setSavedOne(test.id);
-      setTimeout(() => setSavedOne(null), 1500);
+      // Backend returns: { tests: [{ test_id: X }] }
+      const insertedId = res.tests?.[0]?.test_id;
+
+      setTests((prev) =>
+        prev.map((t) => (t.id === test.id ? { ...t, dbId: insertedId } : t)),
+      );
+
+      setSavedOne((prev) => ({ ...prev, [test.id]: true }));
     } catch {
       alert("Save failed");
     }
@@ -120,17 +155,22 @@ export default function GeneratedTestsPage() {
 
   /* ------------ SAVE ALL ------------ */
   async function handleSaveAll() {
+    if (savedAll) return;
     if (!projectId) return alert("Project ID missing");
 
     setSavingAll(true);
 
     try {
-      await saveTests(tests.map(normalize), projectId);
+      const res = await saveTests(tests.map(normalize), projectId);
+
+      const ids = res.tests.map((t) => t.test_id);
+
+      setTests((prev) => prev.map((t, i) => ({ ...t, dbId: ids[i] })));
 
       setSavedAll(true);
-      setTimeout(() => setSavedAll(false), 1500);
+      setSavedOne({}); // all individual are saved now
     } catch {
-      alert("Saving all failed");
+      alert("Save all failed");
     }
 
     setSavingAll(false);
@@ -144,34 +184,29 @@ export default function GeneratedTestsPage() {
       const t = tests.find((x) => x.id === id);
       if (!t) return;
 
-      /* Update backend IF test exists in DB */
       if (t.dbId) {
         await updateTest(t.dbId, parsed);
       }
 
-      /* Update UI only */
-      const updated = tests.map((x) =>
-        x.id === id
-          ? {
-              ...x,
-              testCase: {
-                method: parsed.request_method,
-                headers: parsed.request_headers,
-                body: parsed.request_body,
-              },
-              expected: {
-                status_code: parsed.expected_status_code,
-                body: parsed.expected_response_body,
-              },
-              original: { ...x.original, body: parsed },
-            }
-          : x,
+      setTests((prev) =>
+        prev.map((x) =>
+          x.id === id
+            ? {
+                ...x,
+                testCase: {
+                  method: parsed.request_method,
+                  headers: parsed.request_headers,
+                  body: parsed.request_body,
+                },
+                expected: {
+                  status_code: parsed.expected_status_code,
+                  body: parsed.expected_response_body,
+                },
+                original: { ...x.original, body: parsed },
+              }
+            : x,
+        ),
       );
-
-      setTests(updated);
-
-      // ❌ MUST NOT WRITE TO LOCALSTORAGE
-      // localStorage.setItem("tests", ... );  <-- removed
 
       setEditing({ id: null, content: "" });
       alert("Updated!");
@@ -180,6 +215,7 @@ export default function GeneratedTestsPage() {
     }
   }
 
+  /* ------------ FILTERED LIST ------------ */
   const filtered = tests.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -194,23 +230,33 @@ export default function GeneratedTestsPage() {
         <h1 className="text-4xl font-bold">Generated Tests</h1>
       </div>
 
+      {/* SEARCH */}
       <div className="relative mb-10">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400" />
         <input
           className="w-full bg-purple-950/30 border border-purple-900/50 rounded-xl pl-12 pr-4 py-4"
-          placeholder="Search tests..."
+          placeholder="Search tests…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
+      {/* SAVE ALL */}
       <button
         onClick={handleSaveAll}
-        className="mb-8 bg-green-600 px-6 py-3 rounded-lg"
+        disabled={savedAll}
+        className={`mb-8 px-6 py-3 rounded-lg ${
+          savedAll
+            ? "bg-green-700 opacity-70"
+            : savingAll
+              ? "bg-yellow-600"
+              : "bg-green-600"
+        }`}
       >
-        {savingAll ? "Saving…" : savedAll ? "Saved!" : "Save All Tests"}
+        {savingAll ? "Saving…" : savedAll ? "All Saved!" : "Save All Tests"}
       </button>
 
+      {/* TEST LIST */}
       <div className="space-y-6">
         {filtered.map((test) => {
           const isEditing = editing.id === test.id;
@@ -226,29 +272,39 @@ export default function GeneratedTestsPage() {
                   <span className="text-purple-300">({test.route})</span>
                 </h2>
 
-                <button
-                  onClick={() => handleSave(test)}
-                  disabled={savingOne === test.id}
-                  className="bg-lime-600 px-4 py-2 rounded-lg"
-                >
-                  {savingOne === test.id
-                    ? "Saving…"
-                    : savedOne === test.id
-                      ? "Saved!"
-                      : "Save"}
-                </button>
+                <div className="flex gap-3">
+                  {/* SAVE ONE */}
+                  <button
+                    onClick={() => handleSave(test)}
+                    disabled={savedOne[test.id] || test.dbId}
+                    className={`px-4 py-2 rounded-lg ${
+                      savedOne[test.id] || test.dbId
+                        ? "bg-green-700 opacity-60"
+                        : savingOne === test.id
+                          ? "bg-yellow-600"
+                          : "bg-lime-600"
+                    }`}
+                  >
+                    {savingOne === test.id
+                      ? "Saving…"
+                      : savedOne[test.id] || test.dbId
+                        ? "Saved!"
+                        : "Save"}
+                  </button>
 
-                <button
-                  onClick={() =>
-                    setEditing({
-                      id: test.id,
-                      content: JSON.stringify(test.original.body, null, 2),
-                    })
-                  }
-                  className="bg-blue-600 px-4 py-2 rounded-lg"
-                >
-                  Edit
-                </button>
+                  {/* EDIT */}
+                  <button
+                    onClick={() =>
+                      setEditing({
+                        id: test.id,
+                        content: JSON.stringify(test.original.body, null, 2),
+                      })
+                    }
+                    className="bg-blue-600 px-4 py-2 rounded-lg"
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
 
               {isEditing ? (
@@ -260,6 +316,7 @@ export default function GeneratedTestsPage() {
                       setEditing({ ...editing, content: e.target.value })
                     }
                   />
+
                   <button
                     onClick={() => handleSaveEdit(test.id)}
                     className="mt-4 bg-green-600 px-6 py-2 rounded-lg"
@@ -268,7 +325,7 @@ export default function GeneratedTestsPage() {
                   </button>
                 </>
               ) : (
-                <pre className="bg-black/40 p-4 rounded-lg mb-4">
+                <pre className="bg-black/40 p-4 rounded-lg mb-4 max-h-64 overflow-auto whitespace-pre-wrap">
                   {JSON.stringify(test.original.body, null, 2)}
                 </pre>
               )}

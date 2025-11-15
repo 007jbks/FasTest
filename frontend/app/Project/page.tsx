@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Menu,
@@ -17,7 +17,33 @@ import { useRouter } from "next/navigation";
 const base_url = "http://127.0.0.1:8000";
 
 export default function CreateProject() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("userToken");
+
+      // No token → redirect
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Decode payload
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Expired token → redirect
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem("userToken");
+        router.push("/login");
+        return;
+      }
+    } catch {
+      // Malformed token → redirect
+      localStorage.removeItem("userToken");
+      router.push("/login");
+    }
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -45,7 +71,6 @@ export default function CreateProject() {
       link: "./repository",
     },
     { icon: User, label: "Account", active: false, link: "./account" },
-    { icon: Settings, label: "Settings", active: false, link: "./settings" },
   ];
 
   const handleInputChange = (e) => {
@@ -129,23 +154,12 @@ export default function CreateProject() {
         ></div>
       </div>
 
-      <div
-        className={`${
-          sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out overflow-hidden relative z-10`}
-      >
+      <div className="w-60 backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 ease-in-out relative z-10">
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
 
         <div className="p-6 relative">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-sm border border-white/10 hover:border-white/20"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-8">
             {navItems.map((item, index) => (
               <a
                 key={index}
@@ -194,28 +208,8 @@ export default function CreateProject() {
         </div>
       </div>
 
-      {/* Toggle Button for Closed Sidebar */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg backdrop-blur-xl border border-white/20"
-        >
-          <Menu size={24} />
-        </button>
-      )}
       {/* Main Content */}
       <div className="flex-1 relative">
-        <div className="absolute top-0 left-0 p-6 z-20">
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-gray-800 rounded transition-colors"
-            >
-              <Menu size={24} />
-            </button>
-          )}
-        </div>
-
         {/* Form Container - Glassmorphic */}
         <div className="flex items-center justify-center h-full px-8 relative z-10">
           <div className="w-full max-w-2xl backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-12 shadow-2xl relative">

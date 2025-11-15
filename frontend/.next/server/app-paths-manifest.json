@@ -1,10 +1,16 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/account/page": "app/account/page.js",
+  "/contact/page": "app/contact/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
+  "/main/page": "app/main/page.js",
   "/page": "app/page.js",
-  "/register/page": "app/register/page.js",
+  "/policy/page": "app/policy/page.js",
   "/repository/page": "app/repository/page.js",
+  "/results/page": "app/results/page.js",
   "/routes/page": "app/routes/page.js",
+  "/test/page": "app/test/page.js",
   "/tests/page": "app/tests/page.js"
 }

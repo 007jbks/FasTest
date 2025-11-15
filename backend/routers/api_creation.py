@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from models import Project, Route, Test, User
 from pydantic import BaseModel
+from sqlalchemy import func, literal_column
 from sqlalchemy.orm import Session
 
 from .model import api_tests
@@ -576,3 +577,376 @@ def delete_route(
     db.commit()
 
     return {"message": "Route deleted successfully"}
+
+
+import json
+import os
+
+import httpx
+import jwt
+from db import get_db
+from fastapi import APIRouter, Depends, Header, HTTPException
+from models import Project, Route, Test, TestResult
+from sqlalchemy.orm import Session
+
+
+@router.post("/run-tests/{project_id}/{route_id}")
+async def run_route_tests(
+    project_id: int,
+    route_id: int,
+    token: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    # AUTH + VALIDATION (unchanged)
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    project = (
+        db.query(Project)
+        .filter(Project.project_id == project_id, Project.user_id == user_id)
+        .first()
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    route = (
+        db.query(Route)
+        .filter(Route.route_id == route_id, Route.project_id == project_id)
+        .first()
+    )
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+
+    tests = (
+        db.query(Test)
+        .filter(Test.project_id == project_id, Test.route_id == route_id)
+        .all()
+    )
+
+    results = []
+    passed_count = 0
+    pending_results = []  # Collect results here
+
+    async with httpx.AsyncClient() as client:
+        for t in tests:
+            body = json.loads(t.body)
+
+            expected = body["expected_status_code"]
+            req_method = body["request_method"]
+            req_headers = body.get("request_headers", {})
+            req_body = body.get("request_body", {})
+
+            url = f"{project.projectUrl.rstrip('/')}/{route.routename.lstrip('/')}"
+
+            try:
+                response = await client.request(
+                    req_method,
+                    url,
+                    headers=req_headers,
+                    json=req_body,
+                    timeout=10,
+                )
+                actual = response.status_code
+                actual_body = response.text
+                passed = actual == expected
+
+            except Exception as e:
+                actual = None
+                actual_body = str(e)
+                passed = False
+
+            # Add to in-memory list instead of committing each time
+            pending_results.append(
+                TestResult(
+                    test_id=t.id,
+                    passed=passed,
+                    actual_status=actual,
+                    actual_body=actual_body,
+                )
+            )
+
+            if passed:
+                passed_count += 1
+
+            results.append(
+                {
+                    "test_id": t.id,
+                    "passed": passed,
+                    "expected_status": expected,
+                    "actual_status": actual,
+                }
+            )
+
+    # Commit once (MUCH faster)
+    db.add_all(pending_results)
+    db.commit()
+
+    total = len(tests)
+    percentage = (passed_count / total * 100) if total > 0 else 0
+
+    return {
+        "route_id": route_id,
+        "total_tests": total,
+        "passed": passed_count,
+        "percentage": percentage,
+        "results": results,
+    }
+
+
+@router.post("/run-test/{test_id}")
+async def run_single_test(
+    test_id: int,
+    token: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    # AUTH
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    project = db.query(Project).filter(Project.project_id == test.project_id).first()
+    route = db.query(Route).filter(Route.route_id == test.route_id).first()
+
+    body = json.loads(test.body)
+
+    expected = body["expected_status_code"]
+    req_method = body["request_method"]
+    req_headers = body.get("request_headers", {})
+    req_body = body.get("request_body", {})
+
+    url = f"{project.projectUrl.rstrip('/')}/{route.routename.lstrip('/')}"
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.request(
+                req_method,
+                url,
+                headers=req_headers,
+                json=req_body,
+                timeout=10,
+            )
+            actual = response.status_code
+            actual_body = response.text
+            passed = actual == expected
+
+        except Exception as e:
+            actual = None
+            actual_body = str(e)
+            passed = False
+
+    # STORE RESULT
+    tr = TestResult(
+        test_id=test.id,
+        passed=passed,
+        actual_status=actual,
+        actual_body=actual_body,
+    )
+    db.add(tr)
+    db.commit()
+
+    # RECALCULATE PASS RATE
+    all_tests = db.query(Test).filter(Test.route_id == route.route_id).count()
+
+    passed_tests = (
+        db.query(TestResult)
+        .join(Test, Test.id == TestResult.test_id)
+        .filter(Test.route_id == route.route_id, TestResult.passed == True)
+        .count()
+    )
+
+    percentage = (passed_tests / all_tests * 100) if all_tests > 0 else 0
+
+    return {
+        "test_id": test_id,
+        "passed": passed,
+        "expected_status": expected,
+        "actual_status": actual,
+        "actual_body": actual_body,
+        "percentage_after_run": percentage,
+    }
+
+
+@router.get("/project-test-stats/{project_id}")
+def project_stats(
+    project_id: int, token: str = Header(...), db: Session = Depends(get_db)
+):
+    # AUTH
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Ensure project exists and belongs to user
+    project = (
+        db.query(Project)
+        .filter(Project.project_id == project_id, Project.user_id == user_id)
+        .first()
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Total tests
+    total_tests = db.query(Test).filter(Test.project_id == project_id).count()
+
+    if total_tests == 0:
+        return {
+            "project_id": project_id,
+            "total_tests": 0,
+            "passed_tests": 0,
+            "percentage": 0,
+        }
+
+    # Subquery → Latest run per test
+    latest = (
+        db.query(TestResult.test_id, func.max(TestResult.created_at).label("latest"))
+        .join(Test, Test.id == TestResult.test_id)
+        .filter(Test.project_id == project_id)
+        .group_by(TestResult.test_id)
+        .subquery()
+    )
+
+    # Join latest results back to TestResult
+    latest_results = (
+        db.query(TestResult)
+        .join(
+            latest,
+            (latest.c.test_id == TestResult.test_id)
+            & (latest.c.latest == TestResult.created_at),
+        )
+        .all()
+    )
+
+    # Count passes (only latest)
+    passed_tests = sum(1 for r in latest_results if r.passed)
+
+    percentage = round(passed_tests / total_tests * 100, 2)
+
+    return {
+        "project_id": project_id,
+        "total_tests": total_tests,
+        "passed_tests": passed_tests,
+        "percentage": percentage,
+    }
+
+
+@router.get("/routes-passed-stats/{project_id}")
+def project_routes_stats(
+    project_id: int, token: str = Header(...), db: Session = Depends(get_db)
+):
+    # AUTH
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # verify project
+    project = (
+        db.query(Project)
+        .filter(Project.project_id == project_id, Project.user_id == user_id)
+        .first()
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # fetch tests for project
+    tests = db.query(Test).filter(Test.project_id == project_id).all()
+
+    # get *latest result* per test
+    latest_results = (
+        db.query(TestResult)
+        .join(
+            db.query(
+                TestResult.test_id, func.max(TestResult.created_at).label("latest")
+            )
+            .group_by(TestResult.test_id)
+            .subquery(),
+            (TestResult.test_id == literal_column("anon_1.test_id"))
+            & (TestResult.created_at == literal_column("anon_1.latest")),
+        )
+        .all()
+    )
+
+    # map test_id → passed
+    result_map = {r.test_id: r.passed for r in latest_results}
+
+    # group tests by route
+    route_stats = {}
+    for t in tests:
+        if t.route_id not in route_stats:
+            route_stats[t.route_id] = {
+                "total": 0,
+                "passed": 0,
+            }
+
+        route_stats[t.route_id]["total"] += 1
+        if result_map.get(t.id) is True:
+            route_stats[t.route_id]["passed"] += 1
+
+    # build response
+    output = []
+    for route_id, stats_row in route_stats.items():
+        route = db.query(Route).filter(Route.route_id == route_id).first()
+        total = stats_row["total"]
+        passed = stats_row["passed"]
+        percent = round((passed / total * 100), 2) if total else 0
+
+        output.append(
+            {
+                "route_id": route_id,
+                "routename": route.routename,
+                "total_tests": total,
+                "passed_tests": passed,
+                "percentage": percent,
+            }
+        )
+
+    return {"project_id": project_id, "routes": output}
+
+
+@router.get("/test-status/{test_id}")
+def test_status(test_id: int, token: str = Header(...), db: Session = Depends(get_db)):
+    # AUTH
+    try:
+        user_id = jwt.decode(token, os.environ["jwt_secret"], algorithms=["HS256"])[
+            "id"
+        ]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    # Get latest result
+    result = (
+        db.query(TestResult)
+        .filter(TestResult.test_id == test_id)
+        .order_by(TestResult.created_at.desc())
+        .first()
+    )
+
+    if not result:
+        return {"test_id": test_id, "has_run": False}
+
+    return {
+        "test_id": test_id,
+        "passed": result.passed,
+        "actual_status": result.actual_status,
+        "actual_body": result.actual_body,
+        "created_at": result.created_at,
+    }

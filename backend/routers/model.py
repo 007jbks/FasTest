@@ -37,7 +37,8 @@ def api_tests(prompt: str | None) -> str | None:
     system = [
         (
             "system",
-            f"You are now an api test case generator. You must generate api test cases along with expected outputs in json only respond in only json. The context of the api will be given by human.Create tests like this {ref}",
+            f"""You are now an api test case generator. You must generate api test cases along with expected outputs in json only respond in only json. The context of the api will be given by human.Create tests like this {ref} ALWAYS output a list: [ {ref}, {ref} ].
+                Never return a single object""",
         ),
         ("human", f"The context of the api is {prompt}"),
     ]

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -17,7 +18,34 @@ import {
 const base_url = "http://localhost:8000"; // FIXED
 
 export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("userToken");
+
+      // No token → redirect
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Decode payload
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Expired token → redirect
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem("userToken");
+        router.push("/login");
+        return;
+      }
+    } catch {
+      // Malformed token → redirect
+      localStorage.removeItem("userToken");
+      router.push("/login");
+    }
+  }, []);
+
   const [username, setUsername] = useState("User");
   const [stats, setStats] = useState([
     { value: "0", label: "Tests" },
@@ -133,7 +161,6 @@ export default function Dashboard() {
       link: "./repository",
     },
     { icon: User, label: "Account", active: false, link: "./account" },
-    { icon: Settings, label: "Settings", active: false, link: "./dashboard" },
   ];
 
   return (
@@ -151,20 +178,9 @@ export default function Dashboard() {
       </div>
 
       {/* Sidebar */}
-      <div
-        className={`${
-          sidebarOpen ? "w-60" : "w-0"
-        } backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 overflow-hidden relative z-10`}
-      >
+      <div className="w-60 backdrop-blur-xl bg-white/5 border-r border-white/10 flex flex-col transition-all duration-300 relative z-10">
         <div className="p-6 relative">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mb-8 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg border border-white/10 hover:border-white/20"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-8">
             {navItems.map((item, index) => (
               <a
                 key={index}
@@ -190,25 +206,22 @@ export default function Dashboard() {
         </div>
 
         <div className="mt-auto p-6">
-          <a className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group cursor-pointer">
+          <a
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group cursor-pointer"
+            href={"/contact"}
+          >
             <Mail size={16} className="group-hover:text-purple-300" />
             <span>Contact Us</span>
           </a>
-          <a className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group cursor-pointer mt-2">
+          <a
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors group cursor-pointer mt-2"
+            href="/policy"
+          >
             <FileText size={16} className="group-hover:text-purple-300" />
             <span>Policies</span>
           </a>
         </div>
       </div>
-
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-6 left-6 z-50 text-gray-300 hover:text-white transition-all duration-200 p-2 hover:bg-white/10 rounded-lg border border-white/20"
-        >
-          <Menu size={24} />
-        </button>
-      )}
 
       <div className="flex-1 overflow-auto relative z-10">
         <div className="p-8">
