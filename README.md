@@ -1,5 +1,6 @@
 # FasTest
 AI API Tester written in FastAPI and next.js
+Try Here : https://fastest-main.vercel.app/
 
 ## Stuff added till now:
 1. Landing page
